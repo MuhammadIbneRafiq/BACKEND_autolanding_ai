@@ -84,7 +84,7 @@ GROQ_LLM = ChatGroq(
 #     return rag_chain.invoke("What is the westworld park all about?")
 
 
-class EmailAgents():
+class AIFreelanceAgent():
     # this will categorize the first chat to be query of freelancer or client, if not sure, ask a followup qs.
     def summarizer(self, summary):
         prompt = PromptTemplate(
@@ -270,7 +270,7 @@ def categorize_email(state):
     num_steps = int(state['num_steps'])
     num_steps += 1
     
-    email_category = EmailAgents().summarizer(initial_email)
+    email_category = AIFreelanceAgent().summarizer(initial_email)
     print(email_category)
 
     return {"email_category": email_category, "num_steps":num_steps}
@@ -285,7 +285,7 @@ def research_info_search(state):
     num_steps += 1
 
     # Web search
-    questions = EmailAgents().make_researcher_router(initial_email, email_category)
+    questions = AIFreelanceAgent().make_researcher_router(initial_email, email_category)
     questions = questions['questions']
     # print(questions)
     rag_results = []
@@ -313,7 +313,7 @@ def draft_email_writer(state):
     num_steps += 1
 
     # Generate draft email
-    draft_email = EmailAgents().actual_reply_to_conversation(initial_email,
+    draft_email = AIFreelanceAgent().actual_reply_to_conversation(initial_email,
                                      email_category,
                                      research_info)
     print(draft_email)
@@ -334,7 +334,7 @@ def analyze_draft_email(state):
     num_steps += 1
 
     # Generate draft email
-    draft_email_feedback = EmailAgents().quality_control_agent(initial_email,
+    draft_email_feedback = AIFreelanceAgent().quality_control_agent(initial_email,
                                                 email_category,
                                                 research_info,
                                                 draft_email
@@ -355,7 +355,7 @@ def rewrite_email(state):
     num_steps += 1
 
     # Generate draft email
-    final_email = EmailAgents().final_response(initial_email,
+    final_email = AIFreelanceAgent().final_response(initial_email,
                                                 email_category,
                                                 research_info,
                                                 draft_email,
@@ -376,7 +376,7 @@ def route_to_rewrite(state):
 
     # draft_email = "Yo we can't help you, best regards Sarah"
 
-    router = EmailAgents().actual_reply_to_conversation(initial_email,
+    router = AIFreelanceAgent().actual_reply_to_conversation(initial_email,
                                      email_category,
                                      draft_email
                                    )
