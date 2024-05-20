@@ -1,5 +1,4 @@
 import express, { json } from "express";
-
 import { OpenAI } from "openai";
 import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
