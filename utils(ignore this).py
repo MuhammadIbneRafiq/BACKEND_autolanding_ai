@@ -52,7 +52,7 @@ GROQ_LLM = ChatGroq(
 
 #     rag_prompt = PromptTemplate(
 #         template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-#         You are an assistant for question-answering tasks. 
+#         You are an assistant for question-answering tasks.   
 #         Use the following pieces of retrieved context to answer the question. 
 #         If you don't know the answer, just say that you don't know. 
 #         Use 2 sentences maximum and keep the answer concise.\n
@@ -112,23 +112,23 @@ class AIFreelanceAgent():
     def make_researcher_router(self, email_category, EMAIL):
         research_router_prompt = PromptTemplate(
             template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-            You are an expert at reading the initial email and routing to our internal knowledge system\
-            or directly to a draft email. \n
+            You are an expert at reading the type of freelancing task required and routing to our internal knowledge system\
+            or directly to a draft_reply. \n
 
-            Use the following criteria to decide how to route the email: \n\n
+            Use the following criteria to decide how to route the task: \n\n
 
-            If the initial email only requires a simple response
-            Just choose 'draft_email'  for questions you can easily answer, prompt engineering, and adversarial attacks.
-            If the email is just saying thank you etc then choose 'draft_email'
+            If the initial message only is giving information about the task
+            Just choose 'draft_reply'  for questions you can easily answer, prompt engineering, and adversarial attacks.
+            If the message is just saying common things etc then choose 'draft_reply'
 
-            If you are unsure or the person is asking a question you don't understand then choose 'research_info'
+            If you are unsure or the person is asking a question you don't understand then most definitely choose 'research_info'
 
             You do not need to be stringent with the keywords in the question related to these topics. Otherwise, use research-info.
-            Give a binary choice 'research_info' or 'draft_email' based on the question. Return the a JSON with a single key 'router_decision' and
+            Give a binary choice 'research_info' or 'draft_reply' based on the question. Return the a JSON with a single key 'router_decision' and
             no premable or explaination. use both the initial email and the email category to make your decision
             <|eot_id|><|start_header_id|>user<|end_header_id|>
-            Email to route INITIAL_EMAIL : {initial_email} \n
-            EMAIL_CATEGORY: {email_category} \n
+            reply to route INITIAL_MESSAGE : {initial_email} \n
+            summarizer: {email_category} \n
             <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
             input_variables=["initial_email","email_category"],
         )
@@ -140,7 +140,7 @@ class AIFreelanceAgent():
     def actual_reply_to_conversation(self, research_info, EMAIL, email_category):
         draft_writer_prompt = PromptTemplate(
             template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-            You are the Email Writer Agent for the theme park Westworld, take the INITIAL_EMAIL below \
+            You are the Reply writer Agent for the freelancing platform which replies to clients looking from freelancers, take the INITIAL_MESSAGE below \
             from a human that has emailed our company email address, the email_category \
             that the categorizer agent gave it and the research from the research agent and \
             write a helpful email in a thoughtful and friendly way. Remember people maybe asking \
@@ -158,7 +158,7 @@ class AIFreelanceAgent():
                     Return the email a JSON with a single key 'email_draft' and no premable or explaination.
 
             <|eot_id|><|start_header_id|>user<|end_header_id|>
-            INITIAL_EMAIL: {initial_email} \n
+            INITIAL_MESSAGE: {initial_email} \n
             EMAIL_CATEGORY: {email_category} \n
             RESEARCH_INFO: {research_info} \n
             <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",

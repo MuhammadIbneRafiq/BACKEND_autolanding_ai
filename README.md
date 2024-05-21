@@ -32,4 +32,7 @@ echo "OPENAI_API_KEY=[paste openai api key here]" >> .env
 
 # Start the backend development server
 nodemon ./server.js
+or
+
+node serer.js
 ```
