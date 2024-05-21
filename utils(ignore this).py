@@ -109,7 +109,7 @@ class AIFreelanceAgent():
 
         return (result)
 
-    def make_researcher_router(self, email_category, EMAIL):
+    def make_researcher_router(self, summarizer, EMAIL):
         research_router_prompt = PromptTemplate(
             template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
             You are an expert at reading the type of freelancing task required and routing to our internal knowledge system\
@@ -125,116 +125,116 @@ class AIFreelanceAgent():
 
             You do not need to be stringent with the keywords in the question related to these topics. Otherwise, use research-info.
             Give a binary choice 'research_info' or 'draft_reply' based on the question. Return the a JSON with a single key 'router_decision' and
-            no premable or explaination. use both the initial email and the email category to make your decision
+            no premable or explaination. use both the initial message and the summarizer to make your decision
             <|eot_id|><|start_header_id|>user<|end_header_id|>
-            reply to route INITIAL_MESSAGE : {initial_email} \n
-            summarizer: {email_category} \n
+            reply to route INITIAL_MESSAGE : {initial_message} \n
+            summarizer: {summarizer} \n
             <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
-            input_variables=["initial_email","email_category"],
+            input_variables=["initial_message","summarizer"],
         )
 
         research_router = research_router_prompt | GROQ_LLM | JsonOutputParser()
 
-        return (research_router.invoke({"initial_email": EMAIL, "email_category":email_category}))
+        return (research_router.invoke({"initial_message": EMAIL, "summarizer":summarizer}))
 
-    def actual_reply_to_conversation(self, research_info, EMAIL, email_category):
+    def actual_reply_to_conversation(self, research_info, EMAIL, summarizer):
         draft_writer_prompt = PromptTemplate(
             template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
             You are the Reply writer Agent for the freelancing platform which replies to clients looking from freelancers, take the INITIAL_MESSAGE below \
-            from a human that has emailed our company email address, the email_category \
+            from a human that has come to the platform looking for freelancers. The summarizer \
             that the categorizer agent gave it and the research from the research agent and \
-            write a helpful email in a thoughtful and friendly way. Remember people maybe asking \
-            about experiences they can have in westworld.
+            Ask helpful question to better understand the freelancing needs in a thoughtful and friendly way. Remember people maybe asking \
+            about a lot of things at once, make sure that by the end of the conversation you have these questions asked.
 
-                    If the customer email is 'off_topic' then ask them questions to get more information.
-                    If the customer email is 'customer_complaint' then try to assure we value them and that we are addressing their issues.
-                    If the customer email is 'customer_feedback' then try to assure we value them and that we are addressing their issues.
-                    If the customer email is 'product_enquiry' then try to give them the info the researcher provided in a succinct and friendly way.
-                    If the customer email is 'price_equiry' then try to give the pricing info they requested.
+                    If the customer message is 'off_topic' then ask them questions to get more information about freelancing orders
+                    If the customer message is 'description of certain task' then try to get some designs or descriptions in the form of docs, or URLs or any other links depending on the task 
+                    If the customer message is 'product_enquiry' then try to give them the info the researcher provided in a succinct and friendly way,\
+                    If any part of the user’s description is vague or incomplete, request additional details. \
+                    Facilitate a clear and precise exchange of information and confirm facts and summarize details to ensure accuracy
+                    If the customer message is 'price_equiry' then try to ask for their budget and tell them about what they can possibly get in this budget
 
-                    You never make up information that hasn't been provided by the research_info or in the initial_email.
-                    Always sign off the emails in appropriate manner and from Sarah the Resident Manager.
+                    You never make up information that hasn't been provided by the research_info or in the initial_message.
 
-                    Return the email a JSON with a single key 'email_draft' and no premable or explaination.
+                    Return the reply as a JSON with a single key 'email_draft' and no premable or explaination.
 
             <|eot_id|><|start_header_id|>user<|end_header_id|>
-            INITIAL_MESSAGE: {initial_email} \n
-            EMAIL_CATEGORY: {email_category} \n
+            INITIAL_MESSAGE: {initial_message} \n
+            summarizer: {summarizer} \n
             RESEARCH_INFO: {research_info} \n
             <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
-            input_variables=["initial_email","email_category","research_info"],
+            input_variables=["initial_message","summarizer","research_info"],
         )
 
         draft_writer_chain = draft_writer_prompt | GROQ_LLM | JsonOutputParser()
 
-        return draft_writer_chain.invoke({"initial_email": EMAIL, "email_category":email_category,"research_info":research_info})
+        return draft_writer_chain.invoke({"initial_message": EMAIL, "summarizer":summarizer,"research_info":research_info})
     
-    def quality_control_agent(self, research_info, EMAIL, email_category, draft_email):
+    def quality_control_agent(self, research_info, EMAIL, summarizer, draft_reply):
         draft_analysis_prompt = PromptTemplate(
             template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-            You are the Quality Control Agent read the INITIAL_EMAIL below  from a human that has emailed \
-            our company email address, the email_category that the categorizer agent gave it and the \
-            research from the research agent and write an analysis of how the email.
+            You are the Quality Control Agent read the initial_message below  from a user that has sent a message \
+            , the summarizer that the categorizer agent gave it and the \
+            research from the research agent and write an analysis of what it seems like the message is asking about.
 
-            Check if the DRAFT_EMAIL addresses the customer's issued based on the email category and the \
-            content of the initial email.\n
+            Check if the draft_reply addresses the query in short sentences no more than 2 and the \
+            content of the message is exactly like a chat with a customer service guys. Don't sound like chatgpt neither too casual\n
 
             Give feedback of how the email can be improved and what specific things can be added or change\
-            to make the email more effective at addressing the customer's issues.
+            to make the email more effective based on knowledge base.
 
-            You never make up or add information that hasn't been provided by the research_info or in the initial_email.
+            You never make up or add information that hasn't been provided by the research_info or in the initial_message.
 
             Return the analysis a JSON with a single key 'draft_analysis' and no premable or explaination.
 
             <|eot_id|><|start_header_id|>user<|end_header_id|>
-            INITIAL_EMAIL: {initial_email} \n\n
-            EMAIL_CATEGORY: {email_category} \n\n
+            INITIAL_MESSAGE: {initial_message} \n\n
+            summarizer: {summarizer} \n\n
             RESEARCH_INFO: {research_info} \n\n
-            DRAFT_EMAIL: {draft_email} \n\n
+            draft_reply: {draft_reply} \n\n
             <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
-            input_variables=["initial_email","email_category","research_info"],
+            input_variables=["initial_message","summarizer","research_info"],
         )
 
         draft_analysis_chain = draft_analysis_prompt | GROQ_LLM | JsonOutputParser()
 
-        email_analysis = draft_analysis_chain.invoke({"initial_email": EMAIL,
-                                        "email_category":email_category,
+        email_analysis = draft_analysis_chain.invoke({"initial_message": EMAIL,
+                                        "summarizer":summarizer,
                                         "research_info":research_info,
-                                        "draft_email": draft_email})
+                                        "draft_reply": draft_reply})
 
         return email_analysis
     
-    def final_response(self, research_info, EMAIL, email_category, email_analysis, draft_email):
+    def final_response(self, research_info, EMAIL, summarizer, email_analysis, draft_reply):
         rewrite_email_prompt = PromptTemplate(
             template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
             You are the Final Email Agent read the email analysis below from the QC Agent \
-            and use it to rewrite and improve the draft_email to create a final email.
+            and use it to rewrite and improve the draft_reply to create a final email. Final answer shouldn't be more than a sentence, speak like you are chatting so keep it short. but keep the context.
 
 
-            You never make up or add information that hasn't been provided by the research_info or in the initial_email.
+            You never make up or add information that hasn't been provided by the research_info or in the initial_message.
 
             Return the final email as JSON with a single key 'final_email' which is a string and no premable or explaination.
 
             <|eot_id|><|start_header_id|>user<|end_header_id|>
-            EMAIL_CATEGORY: {email_category} \n\n
+            summarizer: {summarizer} \n\n
             RESEARCH_INFO: {research_info} \n\n
-            DRAFT_EMAIL: {draft_email} \n\n
-            DRAFT_EMAIL_FEEDBACK: {email_analysis} \n\n
+            draft_reply: {draft_reply} \n\n
+            draft_reply_FEEDBACK: {email_analysis} \n\n
             <|eot_id|><|start_header_id|>assistant<|end_header_id|>""",
-            input_variables=["initial_email",
-                            "email_category",
+            input_variables=["initial_message",
+                            "summarizer",
                             "research_info",
                             "email_analysis",
-                            "draft_email",
+                            "draft_reply",
                             ],
         )
 
         rewrite_chain = rewrite_email_prompt | GROQ_LLM | JsonOutputParser()
 
-        final_email = rewrite_chain.invoke({"initial_email": EMAIL,
-                                        "email_category":email_category,
+        final_email = rewrite_chain.invoke({"initial_message": EMAIL,
+                                        "summarizer":summarizer,
                                         "research_info":research_info,
-                                        "draft_email": draft_email,
+                                        "draft_reply": draft_reply,
                                         "email_analysis":email_analysis})
 
         return final_email['final_email']
@@ -245,47 +245,47 @@ class GraphState(TypedDict):
     Represents the state of our graph.
 
     Attributes:
-        initial_email: email
-        email_category: email category
-        draft_email: LLM generation
+        initial_message: email
+        summarizer: email category
+        draft_reply: LLM generation
         final_email: LLM generation
         research_info: list of documents
         info_needed: whether to add search info
         num_steps: number of steps
     """
-    initial_email : str
-    email_category : str
-    draft_email : str
+    initial_message : str
+    summarizer : str
+    draft_reply : str
     final_email : str
     research_info : List[str] # this will now be the RAG results
     info_needed : bool
     num_steps : int
-    draft_email_feedback : dict
+    draft_reply_feedback : dict
     rag_questions : List[str]
 
 def categorize_email(state):
     """take the initial email and categorize it"""
     print("---CATEGORIZING INITIAL EMAIL---")
-    initial_email = state['initial_email']
+    initial_message = state['initial_message']
     num_steps = int(state['num_steps'])
     num_steps += 1
     
-    email_category = AIFreelanceAgent().summarizer(initial_email)
-    print(email_category)
+    summarizer = AIFreelanceAgent().summarizer(initial_message)
+    print(summarizer)
 
-    return {"email_category": email_category, "num_steps":num_steps}
+    return {"summarizer": summarizer, "num_steps":num_steps}
 
 
 def research_info_search(state):
     print("---RESEARCH INFO RAG---")
-    initial_email = state["initial_email"]
-    email_category = state["email_category"]
+    initial_message = state["initial_message"]
+    summarizer = state["summarizer"]
     # research_info = state["research_info"]
     num_steps = state['num_steps']
     num_steps += 1
 
     # Web search
-    questions = AIFreelanceAgent().make_researcher_router(initial_email, email_category)
+    questions = AIFreelanceAgent().make_researcher_router(initial_message, summarizer)
     questions = questions['questions']
     # print(questions)
     rag_results = []
@@ -303,63 +303,63 @@ def research_info_search(state):
 
     return {"research_info": rag_results,"rag_questions":questions, "num_steps":num_steps}
 
-def draft_email_writer(state):
+def draft_reply_writer(state):
     print("---DRAFT EMAIL WRITER---")
     ## Get the state
-    initial_email = state["initial_email"]
-    email_category = state["email_category"]
+    initial_message = state["initial_message"]
+    summarizer = state["summarizer"]
     research_info = state["research_info"]
     num_steps = state['num_steps']
     num_steps += 1
 
     # Generate draft email
-    draft_email = AIFreelanceAgent().actual_reply_to_conversation(initial_email,
-                                     email_category,
+    draft_reply = AIFreelanceAgent().actual_reply_to_conversation(initial_message,
+                                     summarizer,
                                      research_info)
-    print(draft_email)
-    # print(type(draft_email))
+    print(draft_reply)
+    # print(type(draft_reply))
 
-    email_draft = draft_email['email_draft']
+    email_draft = draft_reply['email_draft']
 
-    return {"draft_email": email_draft, "num_steps":num_steps}
+    return {"draft_reply": email_draft, "num_steps":num_steps}
 
-def analyze_draft_email(state):
+def analyze_draft_reply(state):
     print("---DRAFT EMAIL ANALYZER---")
     ## Get the state
-    initial_email = state["initial_email"]
-    email_category = state["email_category"]
-    draft_email = state["draft_email"]
+    initial_message = state["initial_message"]
+    summarizer = state["summarizer"]
+    draft_reply = state["draft_reply"]
     research_info = state["research_info"]
     num_steps = state['num_steps']
     num_steps += 1
 
     # Generate draft email
-    draft_email_feedback = AIFreelanceAgent().quality_control_agent(initial_email,
-                                                email_category,
+    draft_reply_feedback = AIFreelanceAgent().quality_control_agent(initial_message,
+                                                summarizer,
                                                 research_info,
-                                                draft_email
+                                                draft_reply
                                                )
-    # print(draft_email)
-    # print(type(draft_email))
+    # print(draft_reply)
+    # print(type(draft_reply))
 
-    return {"draft_email_feedback": draft_email_feedback, "num_steps":num_steps}
+    return {"draft_reply_feedback": draft_reply_feedback, "num_steps":num_steps}
 
 def rewrite_email(state):
     print("---ReWRITE EMAIL ---")
-    initial_email = state["initial_email"]
-    email_category = state["email_category"]
-    draft_email = state["draft_email"]
+    initial_message = state["initial_message"]
+    summarizer = state["summarizer"]
+    draft_reply = state["draft_reply"]
     research_info = state["research_info"]
-    draft_email_feedback = state["draft_email_feedback"]
+    draft_reply_feedback = state["draft_reply_feedback"]
     num_steps = state['num_steps']
     num_steps += 1
 
     # Generate draft email
-    final_email = AIFreelanceAgent().final_response(initial_email,
-                                                email_category,
+    final_email = AIFreelanceAgent().final_response(initial_message,
+                                                summarizer,
                                                 research_info,
-                                                draft_email,
-                                                draft_email_feedback
+                                                draft_reply,
+                                                draft_reply_feedback
                                                )
     
     return {"final_email": final_email, "num_steps":num_steps}
@@ -369,16 +369,16 @@ def rewrite_email(state):
 def route_to_rewrite(state):
 
     print("---ROUTE TO REWRITE---")
-    initial_email = state["initial_email"]
-    email_category = state["email_category"]
-    draft_email = state["draft_email"]
+    initial_message = state["initial_message"]
+    summarizer = state["summarizer"]
+    draft_reply = state["draft_reply"]
     # research_info = state["research_info"]
 
-    # draft_email = "Yo we can't help you, best regards Sarah"
+    # draft_reply = "Yo we can't help you, best regards Sarah"
 
-    router = AIFreelanceAgent().actual_reply_to_conversation(initial_email,
-                                     email_category,
-                                     draft_email
+    router = AIFreelanceAgent().actual_reply_to_conversation(initial_message,
+                                     summarizer,
+                                     draft_reply
                                    )
     print(router)
     print(router['router_decision'])
@@ -399,22 +399,22 @@ def run_graph(EMAIL):
     # Define the nodes
     workflow.add_node("categorize_email", categorize_email) # categorize email
     # workflow.add_node("research_info_search", research_info_search) # knowledge base search with RAG pdf but not set up yet
-    workflow.add_node("draft_email_writer", draft_email_writer)
-    workflow.add_node("analyze_draft_email", analyze_draft_email)
+    workflow.add_node("draft_reply_writer", draft_reply_writer)
+    workflow.add_node("analyze_draft_reply", analyze_draft_reply)
     workflow.add_node("rewrite_email", rewrite_email)
 
 
     #ADD EDGES
     workflow.set_entry_point("categorize_email")
 
-    workflow.add_edge("categorize_email", "draft_email_writer")
-    workflow.add_edge("draft_email_writer", "analyze_draft_email")
-    workflow.add_edge("analyze_draft_email", "rewrite_email")
+    workflow.add_edge("categorize_email", "draft_reply_writer")
+    workflow.add_edge("draft_reply_writer", "analyze_draft_reply")
+    workflow.add_edge("analyze_draft_reply", "rewrite_email")
     workflow.add_edge("rewrite_email", END)
 
     app = workflow.compile()
 
-    inputs = {"initial_email": EMAIL, "num_steps":0}
+    inputs = {"initial_message": EMAIL, "num_steps":0}
     # for output in app.stream(inputs):
     #     for key, value in output.items():
     #         print(f"Finished running: {key}:")
@@ -433,4 +433,5 @@ EMAIL = """HI there, \n
     Thanks,
     Ringo
 """
-run_graph(EMAIL)
+email2 = 'hi i need someone to make me a short form video'
+run_graph(email2)
