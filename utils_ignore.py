@@ -1,5 +1,4 @@
 # ignore this python file, this will be later converted into the utils.js file
-
 from langchain_groq import ChatGroq
 import os
 from datetime import datetime
@@ -20,69 +19,6 @@ GROQ_LLM = ChatGroq(
             api_key=os.environ.get('GROQ_API_KEY'),
             model="llama3-70b-8192"
         ) 
-
-# def rag_chain_node():
-#     loader_csv = PyPDFLoader(file_path='freelancers_data.pdf')
-#     loader_all = MergedDataLoader(loaders=[loader_csv]) 
-#     docs_all = loader_all.load()
-
-#     from langchain.text_splitter import RecursiveCharacterTextSplitter
-#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=30)
-#     texts = text_splitter.split_documents(docs_all)
-
-
-#     from langchain_community.embeddings import HuggingFaceBgeEmbeddings
-#     model_name = "BAAI/bge-base-en"
-#     encode_kwargs = {'normalize_embeddings': True} # set True to compute cosine similarity
-
-#     bge_embeddings = HuggingFaceBgeEmbeddings(
-#         model_name=model_name,
-#         encode_kwargs=encode_kwargs
-#     )
-#     # from langchain_chroma import Chroma
-
-#     persist_directory = 'db'
-
-#     ## Heres the embeddings
-#     embedding = bge_embeddings
-
-#     vectordb = Chroma.from_documents(documents=texts, embedding=embedding, persist_directory=persist_directory)
-
-#     retriever = vectordb.as_retriever(search_kwargs={"k": 5})
-
-#     rag_prompt = PromptTemplate(
-#         template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-#         You are an assistant for question-answering tasks.   
-#         Use the following pieces of retrieved context to answer the question. 
-#         If you don't know the answer, just say that you don't know. 
-#         Use 2 sentences maximum and keep the answer concise.\n
-
-#         <|eot_id|><|start_header_id|>user<|end_header_id|>
-#         QUESTION: {question} \n
-#         CONTEXT: {context} \n
-#         Answer:
-#         <|eot_id|>
-#         <|start_header_id|>assistant<|end_header_id|>
-#         """,
-#         input_variables=["question","context"],
-#     )
-
-#     rag_prompt_chain = rag_prompt | GROQ_LLM | StrOutputParser()
-
-#     QUESTION = """What can I do with video editing freelancers?"""
-#     CONTEXT = retriever.invoke(QUESTION)
-
-#     result = rag_prompt_chain.invoke({"question": QUESTION, "context":CONTEXT})
-    
-#     rag_chain = (
-#     {"context": retriever , "question": RunnablePassthrough()}
-#     | rag_prompt
-#     | GROQ_LLM
-#     | StrOutputParser()
-#     )
-
-#     return rag_chain.invoke("What is the westworld park all about?")
-
 
 class AIFreelanceAgent():
     # this will categorize the first chat to be query of freelancer or client, if not sure, ask a followup qs.
@@ -316,11 +252,11 @@ def draft_reply_writer(state):
     draft_reply = AIFreelanceAgent().actual_reply_to_conversation(initial_message,
                                      summarizer,
                                      research_info)
-    print(draft_reply)
+    # print(draft_reply)
     # print(type(draft_reply))
 
     email_draft = draft_reply['email_draft']
-
+    print(email_draft)
     return {"draft_reply": email_draft, "num_steps":num_steps}
 
 def analyze_draft_reply(state):
@@ -340,7 +276,7 @@ def analyze_draft_reply(state):
                                                 draft_reply
                                                )
     # print(draft_reply)
-    # print(type(draft_reply))
+    print(type(draft_reply))
 
     return {"draft_reply_feedback": draft_reply_feedback, "num_steps":num_steps}
 
@@ -362,6 +298,7 @@ def rewrite_email(state):
                                                 draft_reply_feedback
                                                )
     
+    print(final_email)
     return {"final_email": final_email, "num_steps":num_steps}
 
 ###CONDITIONAL EDGES
@@ -422,7 +359,7 @@ def run_graph(EMAIL):
     output = app.invoke(inputs)
 
     # print(type(output))
-    return (output['final_email'])
+    return ('this is output', output['final_email'])
     
 
 # run the agent
@@ -434,4 +371,4 @@ EMAIL = """HI there, \n
     Ringo
 """
 email2 = 'hi i need someone to make me a short form video'
-run_graph(email2)
+# run_graph(email2)
