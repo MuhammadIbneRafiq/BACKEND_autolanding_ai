@@ -22,22 +22,16 @@ from langchain_community.chat_message_histories import (
     PostgresChatMessageHistory,
 )
 
-# db password_supabase = NGJqfNgaBxlTwOVC
 
 #put this connection string in .env file pls
 
-history = PostgresChatMessageHistory(
-    connection_string="postgres://postgres.okkdlbdnfaylakfbycta:NGJqfNgaBxlTwOVC@aws-0-eu-central-1.pooler.supabase.com:5432/postgres",
-    
-    session_id="chat_history_1",
-)
 
 # print the session_id = 'chat1' to get all the initial prompt and response.
-# URL = "https://live-baboon-34450.upstash.io"
-# TOKEN ="AYaSAAIncDE1M2YwMzFlOTk5ODk0ZWZlYmI0MDc0YTlhYWE5MzFlNHAxMzQ0NTA"
-# history = UpstashRedisChatMessageHistory(
-#     url=URL, token=TOKEN, ttl=500, session_id="chat1"
-# )
+URL = "https://live-baboon-34450.upstash.io"
+TOKEN ="AYaSAAIncDE1M2YwMzFlOTk5ODk0ZWZlYmI0MDc0YTlhYWE5MzFlNHAxMzQ0NTA"
+history = UpstashRedisChatMessageHistory(
+    url=URL, token=TOKEN, ttl=500, session_id="chat1"
+)
 
 # print(history, type(history))
 
