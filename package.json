@@ -11,12 +11,16 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@langchain/community": "^0.2.2",
+    "@langchain/groq": "^0.0.12",
     "@supabase/supabase-js": "^2.43.2",
+    "axios": "^1.7.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "groq-sdk": "^0.3.3",
     "openai": "^4.47.1",
+    "pg": "^8.11.5",
     "supabase": "^1.167.4",
     "ws": "^8.17.0"
   }

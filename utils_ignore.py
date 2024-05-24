@@ -330,7 +330,7 @@ def route_to_rewrite(state):
     
 #BUILD THE GRAPH
 
-def run_graph(EMAIL):
+def run_graph(input_message):
     workflow = StateGraph(GraphState)
 
     # Define the nodes
@@ -351,7 +351,7 @@ def run_graph(EMAIL):
 
     app = workflow.compile()
 
-    inputs = {"initial_message": EMAIL, "num_steps":0}
+    inputs = {"initial_message": input_message, "num_steps":0}
     # for output in app.stream(inputs):
     #     for key, value in output.items():
     #         print(f"Finished running: {key}:")
@@ -363,12 +363,6 @@ def run_graph(EMAIL):
     
 
 # run the agent
-EMAIL = """HI there, \n
-    I am a big fan of westworld.
-    can I meet Maeve in the park? Really want to chat with her.
 
-    Thanks,
-    Ringo
-"""
-email2 = 'hi i need someone to make me a short form video'
-# run_graph(email2)
+user_input_message = 'hi i need someone to make me a short form video'
+run_graph(user_input_message)

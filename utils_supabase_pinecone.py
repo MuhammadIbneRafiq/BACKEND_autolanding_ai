@@ -1,6 +1,9 @@
 # add supabase client to retrieve past conversation of specific id
 # add pinecone but the function runs once and use the vector embeddings over and over again.
 # from utils_ignore import GraphState, AIFreelanceAgent
+
+# RUN THIS EXACT FILE IN ONE FUNCTION THAT IS USED WHEN
+
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -14,60 +17,91 @@ from langchain.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
 )
-from supabase import create_client
-SUPABASE_KEY= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ra2RsYmRuZmF5bGFrZmJ5Y3RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTM1MjIzNTIsImV4cCI6MjAyOTA5ODM1Mn0.Zf4DnOscUxz5LxbulHsMMmtyXT7Eoapg50WVgAW_Nig'
-SUPABASE_URL= 'https://okkdlbdnfaylakfbycta.supabase.co'
 
-supabase = create_client(supabase_key=SUPABASE_KEY, supabase_url=SUPABASE_URL)
+from langchain_community.chat_message_histories import (
+    PostgresChatMessageHistory,
+)
 
-# data = supabase_client.table("countries").insert({"name":"Germany"}).execute()
-response = supabase.table('Messages').select("*").execute()
-data = supabase.table("Messages").select("*").eq("user_id", "e00ad159-0e2b-449e-b6ec-fbd70541fecd").execute()
+# db password_supabase = NGJqfNgaBxlTwOVC
 
-# for datas in data:
-#     print(datas)
+#put this connection string in .env file pls
 
+history = PostgresChatMessageHistory(
+    connection_string="postgres://postgres.okkdlbdnfaylakfbycta:NGJqfNgaBxlTwOVC@aws-0-eu-central-1.pooler.supabase.com:5432/postgres",
+    
+    session_id="chat_history_1",
+)
 
-# URL = ""
-# TOKEN =""
+# print the session_id = 'chat1' to get all the initial prompt and response.
+# URL = "https://live-baboon-34450.upstash.io"
+# TOKEN ="AYaSAAIncDE1M2YwMzFlOTk5ODk0ZWZlYmI0MDc0YTlhYWE5MzFlNHAxMzQ0NTA"
 # history = UpstashRedisChatMessageHistory(
 #     url=URL, token=TOKEN, ttl=500, session_id="chat1"
 # )
 
-
-# model = ChatGroq(
-#             api_key=os.environ.get('GROQ_API_KEY'),
-#             model="llama3-70b-8192"
-#         ) 
-
-# prompt = ChatPromptTemplate.from_messages([
-#         ("system", "You are a friendly AI assistant."),
-#         MessagesPlaceholder(variable_name="chat_history"),
-#         ("human", "{input}")
-#     ])
+# print(history, type(history))
 
 
-# memory = ConversationBufferMemory(
-#     memory_key="chat_history",
-#     return_messages=True,
-#     chat_memory=history,
-# )
 
-# chain = prompt | model
-# chain = LLMChain(
-#     llm=model,
-#     prompt=prompt,
-#     verbose=True,
-#     # memory=memory
-# )
+model = ChatGroq(
+            api_key=os.environ.get('GROQ_API_KEY'),
+            model="llama3-70b-8192"
+        ) 
+
+prompt = ChatPromptTemplate.from_messages([
+        ("system", 
+         
+         '''
+         
+         
+            You are the Reply writer Agent for the freelancing platform which replies to clients looking from freelancers, take the INITIAL_MESSAGE below \
+            from a human that has come to the platform looking for freelancers. The summarizer \
+            that the categorizer agent gave it and the research from the research agent and \
+            Ask helpful question to better understand the freelancing needs in a thoughtful and friendly way. Remember people maybe asking \
+            about a lot of things at once, make sure that by the end of the conversation you have these questions asked.
+
+                    If the customer message is 'off_topic' then ask them questions to get more information about freelancing orders
+                    If the customer message is 'description of certain task' then try to get some designs or descriptions in the form of docs, or URLs or any other links depending on the task 
+                    If the customer message is 'product_enquiry' then try to give them the info the researcher provided in a succinct and friendly way,\
+                    If any part of the user’s description is vague or incomplete, request additional details. \
+                    Facilitate a clear and precise exchange of information and confirm facts and summarize details to ensure accuracy
+                    If the customer message is 'price_equiry' then try to ask for their budget and tell them about what they can possibly get in this budget
+
+                    You never make up information that hasn't been provided by the research_info or in the initial_message.
+
+                    Return the reply as either 1 question or one sentence no more than around 20ish words. Make sure to not ask everything mentioned in the prompt \
+                    at once, but check in memory if the above question is answered but don't ask questions back to back.
+                    Keep it naturally in a conversational tone as well as friendly.
+                    
+                    If they ask for further communications, ask them to contact whatsapp +316 45421019 for details, Linkedin: Muhammad Rafiq.
+         '''
+         
+         ),
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("human", "{input}")
+    ])
+
+
+memory = ConversationBufferMemory(
+    memory_key="chat_history",
+    return_messages=True,
+    chat_memory=history,
+)
+
+chain = prompt | model
+chain = LLMChain(
+    llm=model,
+    prompt=prompt,
+    # verbose=True,
+    memory=memory
+)
 
 
 # Prompt 1
-# q1 = { "input": "My name is Leon" }
-# resp1 = chain.invoke(q1)
-# print(resp1["text"])
+# q1 = { "input": "I want a freelancer" }
 
-# # Prompt 2
-# q2 = { "input": "What is my name?" }
-# resp2 = chain.invoke(q2)
-# print(resp2["text"])
+
+# for i in range(2):
+#     question = { 'q1': input('WHAT IS UR QS:') }
+#     resp1 = chain.invoke(question['q1'])
+#     print(resp1['text'])
