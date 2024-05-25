@@ -345,7 +345,7 @@ app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
             res.status(200).json(messageResponse[0]);
         }
     } catch (error) {
-        console.error("Error sending messagesfsdfdsf:", error);
+        console.error("Error sending message:", error);
         res.status(500).json({ error: "Failed to send message" });
     }
 });
