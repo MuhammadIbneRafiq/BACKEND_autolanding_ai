@@ -78,7 +78,7 @@ const app = express();
 
 app.use(express.json());
 
-app.post("/", async (req, res) => {
+app.post("/chat/:sessionId", async (req, res) => {
   try {
     const { sessionId, message } = req.body;
 
@@ -97,5 +97,5 @@ app.post("/", async (req, res) => {
 });
 
 app.listen(3001, () => {
-  console.log("Server listening on port 3000");
+  console.log("Server listening on port 3001");
 });
