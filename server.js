@@ -137,7 +137,7 @@ app.post("/auth/login", async (req, res) => {
     }
 });
 
-app.post("/auth/logout", authenticateUser, async (req, res) => {
+app.post("/auth/logout", /* authenticateUser, */ async (req, res) => {
     const authHeader = req.headers.authorization || "";
     const token = authHeader.split(" ")[1]; // Assuming "Bearer TOKEN"
 
@@ -156,7 +156,7 @@ app.post("/auth/logout", authenticateUser, async (req, res) => {
 });
 
 // CHAT ROUTES
-app.post("/chat/new", authenticateUser, async (req, res) => {
+app.post("/chat/new", /* authenticateUser, */ async (req, res) => {
     const { messageToSend, from } = req.body;
 
     if (!messageToSend || !from) {
@@ -200,7 +200,7 @@ app.post("/chat/new", authenticateUser, async (req, res) => {
     }
 });
 
-app.post("/chat/:conversationId", authenticateUser, async (req, res) => {
+app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
     const { messageToSend, conversationId, from, chatHistory } = req.body;
 
     console.log("Received:", messageToSend, conversationId, from);
@@ -345,13 +345,13 @@ app.post("/chat/:conversationId", authenticateUser, async (req, res) => {
             res.status(200).json(messageResponse[0]);
         }
     } catch (error) {
-        console.error("Error sending message:", error);
+        console.error("Error sending messagesfsdfdsf:", error);
         res.status(500).json({ error: "Failed to send message" });
     }
 });
 
 // FETCH PROJECTS
-app.get("/projects", authenticateUser, async (req, res) => {
+app.get("/projects", /* authenticateUser, */ async (req, res) => {
     try {
         console.log("User ID:", req.user.id);
 
@@ -373,7 +373,7 @@ app.get("/projects", authenticateUser, async (req, res) => {
     }
 });
 
-app.get("/projects/:projectId", authenticateUser, async (req, res) => {
+app.get("/projects/:projectId", /* authenticateUser, */ async (req, res) => {
     const projectId = req.params.projectId;
 
     try {
@@ -394,7 +394,7 @@ app.get("/projects/:projectId", authenticateUser, async (req, res) => {
 });
 
 // FETCH CHATS
-app.get("/chat/conversations", authenticateUser, async (req, res) => {
+app.get("/chat/conversations", /* authenticateUser, */ async (req, res) => {
     try {
         console.log("User ID:", req.user.id);
 
@@ -416,7 +416,7 @@ app.get("/chat/conversations", authenticateUser, async (req, res) => {
     }
 });
 
-app.get("/chat/:conversationId", authenticateUser, async (req, res) => {
+app.get("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
     const conversationId = req.params.conversationId;
 
     try {

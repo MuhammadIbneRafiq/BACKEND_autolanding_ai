@@ -89,13 +89,11 @@ chain = LLMChain(
     # verbose=True,
     memory=memory
 )
-
-
 # Prompt 1
 # q1 = { "input": "I want a freelancer" }
 
 
-# for i in range(2):
-#     question = { 'q1': input('WHAT IS UR QS:') }
-#     resp1 = chain.invoke(question['q1'])
-#     print(resp1['text'])
+for i in range(15):
+    question = input('WHAT IS UR QS:') 
+    resp1 = chain.invoke(question)
+    print('ANSWER', resp1['text'])

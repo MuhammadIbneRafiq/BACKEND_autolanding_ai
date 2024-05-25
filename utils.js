@@ -74,13 +74,13 @@ const chainWithHistory = new RunnableWithMessageHistory({
 
 const chat_input_main = async () => {
   try {
-    const sessionId = "langchain-test-session";
+    const sessionId = "langchain-test-session"; // add the conversation_id from supabase instead of langchain-test-session
 
-    const res2 = await chainWithHistory.invoke(
-      { input: "i need video editors" },
-      { configurable: { sessionId } }
-    );
-    console.log(res2);
+        const res2 = await chainWithHistory.invoke(
+        { input: "i need video editors" },
+        { configurable: { sessionId } }
+        );
+        console.log(res2);
 
   } catch (error) {
     console.error("Error:", error);
@@ -89,5 +89,4 @@ const chat_input_main = async () => {
     await pool.end();
   }
 };
-
-chat_input_main();
+chat_input_main()
