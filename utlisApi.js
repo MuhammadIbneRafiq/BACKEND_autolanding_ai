@@ -1,5 +1,6 @@
-import dotenv from 'dotenv';
-import pg from 'pg';
+import express from "express";
+import dotenv from "dotenv";
+import pg from "pg";
 import { PostgresChatMessageHistory } from "@langchain/community/stores/message/postgres";
 import { ChatOpenAI } from "@langchain/openai";
 import { RunnableWithMessageHistory } from "@langchain/core/runnables";
@@ -17,13 +18,14 @@ const connectionString = process.env.POSTGRES_CONNECTION_STRING;
 const pool = new pg.Pool({ connectionString });
 
 const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama3-8b-8192", // Using the 8-billion parameter model
-  });
+  apiKey: process.env.GROQ_API_KEY,
+  model: "llama3-8b-8192", // Using the 8-billion parameter model
+});
+
 const prompt = ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      `
+  [
+    "system",
+    `
       You are the Reply writer Agent for the freelancing platform which replies to clients looking for freelancers. Take the INITIAL_MESSAGE below 
       from a human that has come to the platform looking for freelancers. The summarizer 
       that the categorizer agent gave it and the research from the research agent and 
@@ -44,11 +46,11 @@ const prompt = ChatPromptTemplate.fromMessages([
       Keep it naturally in a conversational tone as well as friendly.
   
       If they ask for further communications, ask them to contact WhatsApp +316 45421019 for details, or LinkedIn: Muhammad Rafiq.
-      `,
-    ],
-    new MessagesPlaceholder("chat_history"),
-    ["human", "{input}"],
-  ]);
+    `,
+  ],
+  new MessagesPlaceholder("chat_history"),
+  ["human", "{input}"],
+]);
 
 const chain = prompt.pipe(model).pipe(new StringOutputParser());
 
@@ -72,22 +74,28 @@ const chainWithHistory = new RunnableWithMessageHistory({
   },
 });
 
-const chat_input_main = async () => {
-  try {
-    const sessionId = "langchain-test-session";
+const app = express();
 
-    const res2 = await chainWithHistory.invoke(
-      { input: "alshahab rezvi" },
+app.use(express.json());
+
+app.post("/", async (req, res) => {
+  try {
+    const { sessionId, message } = req.body;
+
+    const result = await chainWithHistory.invoke(
+      { input: message },
       { configurable: { sessionId } }
     );
-    console.log(res2);
 
+    res.status(200).json({ message: result });
   } catch (error) {
-    console.error("Error:", error);
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   } finally {
-    // Close the pool when done
     await pool.end();
   }
-};
+});
 
-chat_input_main();
+app.listen(3001, () => {
+  console.log("Server listening on port 3000");
+});
