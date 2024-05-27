@@ -253,15 +253,14 @@ app.post("/chat/new", authenticateUser, async (req, res) => {
 
 app.post("/chat/:conversationId", authenticateUser, async (req, res) => {
     const { messageToSend, conversationId, from, chatHistory } = req.body;
-
-    if (
-        (!messageToSend && from === "user") ||
-        !conversationId ||
-        !from ||
-        (!chatHistory && from === "assistant")
-    ) {
-        return res.status(400).json({ error: "Invalid request" });
-    }
+    // if (
+    //     (!messageToSend && from === "user") ||
+    //     !conversationId ||
+    //     !from ||
+    //     (!chatHistory && from === "assistant")
+    // ) {
+    //     return res.status(400).json({ error: "Invalid request" });
+    // }
 
     try {
         if (from === "user") {
@@ -288,10 +287,10 @@ app.post("/chat/:conversationId", authenticateUser, async (req, res) => {
             // Assistant
             const input_from_user = 'i need freelancer TO Sleek styled investor design';
 
-            console.log('message to send her', chatHistory)
+            // console.log('message to send her', chatHistory)
 
             const res2 = await chainWithHistory.invoke(
-                { input: input_from_user },
+                { input: chatHistory },
                 { configurable: { sessionId: conversationId } }
             );
             
