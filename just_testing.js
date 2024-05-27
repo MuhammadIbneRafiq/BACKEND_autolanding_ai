@@ -82,30 +82,24 @@ const chainWithHistory = new RunnableWithMessageHistory({
   },
 });
 
-const chat_input_main = async () => {
-  try {
-    const sessionId = "session_id_123"; // add the conversation_id from supabase instead of langchain-test-session
+async function chat_input_main(sessionId, input_from_user) {
+    try {
+        // console.log('Session ID:', sessionId);
 
+        // Assuming chainWithHistory is properly defined elsewhere
+        const res2 = await chainWithHistory.invoke(
+            { input: input_from_user },
+            { configurable: { sessionId } }
+        );
 
-    console.log('this is resp', sessionId)
-    // const res2 = await chainWithHistory.invoke(
-    //   { input: "yo i neeed digital makret now." },
-    //   { configurable: { sessionId } }
-    // );
-    // console.log(res2);
-    const { data: messages } = await supabase
-        .from("messages1")
-        .select("*")
-        .eq("session_id", sessionId);
+        // console.log('Response:', res2);
 
-
-    console.log('this is message', messages[0]['message']['content']);
-
-
-} catch (error) {
-    console.error("Error:", error);
-};
+    } catch (error) {
+        console.error("Error:", error);
+    }
 }
 
+const sessionId = "session_id_123"; // You can replace this with the actual session ID
+export { chat_input_main };
 
-chat_input_main()
+chat_input_main(sessionId, 'I NEED FREELANCERS');
