@@ -1,4 +1,5 @@
 import express, { json } from "express";
+
 import { OpenAI } from "openai";
 import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
@@ -137,7 +138,7 @@ app.post("/auth/login", async (req, res) => {
     }
 });
 
-app.post("/auth/logout", /* authenticateUser, */ async (req, res) => {
+app.post("/auth/logout", authenticateUser, async (req, res) => {
     const authHeader = req.headers.authorization || "";
     const token = authHeader.split(" ")[1]; // Assuming "Bearer TOKEN"
 
@@ -156,7 +157,7 @@ app.post("/auth/logout", /* authenticateUser, */ async (req, res) => {
 });
 
 // CHAT ROUTES
-app.post("/chat/new", /* authenticateUser, */ async (req, res) => {
+app.post("/chat/new", authenticateUser, async (req, res) => {
     const { messageToSend, from } = req.body;
 
     if (!messageToSend || !from) {
@@ -184,6 +185,7 @@ app.post("/chat/new", /* authenticateUser, */ async (req, res) => {
                     conversation_id: conversationResponse[0].conversation_id,
                     from: from,
                     message: messageToSend,
+                    user_id: conversationResponse[0].user_id,
                 },
             ])
             .select();
@@ -200,10 +202,13 @@ app.post("/chat/new", /* authenticateUser, */ async (req, res) => {
     }
 });
 
-app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
+
+app.post("/chat/:conversationId", authenticateUser, async (req, res) => {
     const { messageToSend, conversationId, from, chatHistory } = req.body;
 
-    console.log("Received:", messageToSend, conversationId, from);
+    console.log('2', conversationId)
+    console.log('4', chatHistory)
+
 
     if (
         (!messageToSend && from === "user") ||
@@ -223,6 +228,7 @@ app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
                         conversation_id: conversationId,
                         from: from,
                         message: messageToSend,
+                        // user_id: 
                     },
                 ])
                 .select();
@@ -232,56 +238,52 @@ app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
             }
 
             const messageResponse = message;
-            console.log("Message Response:", messageResponse[0]);
             res.status(200).json(messageResponse[0]);
         } else {
             // Assistant
             const response = await openai.chat.completions.create({
                 model: "gpt-4-turbo-2024-04-09",
                 messages: chatHistory,
-                tools: [
-                    {
-                        type: "function",
-                        function: {
-                            name: "createProject",
-                            description:
-                                "Creates a new freelancing project in the database.",
-                            parameters: {
-                                type: "object",
-                                properties: {
-                                    title: {
-                                        type: "string",
-                                        description:
-                                            "A short and concise title for the freelancing project.",
-                                    },
-                                    description: {
-                                        type: "string",
-                                        description:
-                                            "A clear and informative description of the freelancing project.",
-                                    },
-                                    url: {
-                                        type: "string",
-                                        description:
-                                            "A url that points to the attachments for the project.",
-                                    },
-                                },
-                                required: ["title", "description", "url"],
-                            },
-                        },
-                    },
-                ],
+                // tools: [
+                //     {
+                //         type: "function",
+                //         function: {
+                //             name: "createProject",
+                //             description:
+                //                 "Creates a new freelancing project in the database.",
+                //             parameters: {
+                //                 type: "object",
+                //                 properties: {
+                //                     title: {
+                //                         type: "string",
+                //                         description:
+                //                             "A short and concise title for the freelancing project.",
+                //                     },
+                //                     description: {
+                //                         type: "string",
+                //                         description:
+                //                             "A clear and informative description of the freelancing project.",
+                //                     },
+                //                     url: {
+                //                         type: "string",
+                //                         description:
+                //                             "A url that points to the attachments for the project.",
+                //                     },
+                //                 },
+                //                 required: ["title", "description", "url"],
+                //             },
+                //         },
+                //     },
+                // ],
             });
 
-            console.log("Response:", response);
 
             if (response.choices[0].finish_reason === "tool_calls") {
-                console.log("Assistant is trying to create a project...");
 
                 const parsedResponse = JSON.parse(
                     response.choices[0].message.tool_calls[0].function.arguments
                 );
 
-                console.log("Parsed Response:", parsedResponse);
                 const title = parsedResponse.title;
 
                 const description = parsedResponse.description;
@@ -296,7 +298,6 @@ app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
                     url
                 );
 
-                console.log("Project Created:", project);
 
                 const { data: message, error: messageError } = await supabase
                     .from("Messages")
@@ -316,7 +317,8 @@ app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
 
                 const messageResponse = message;
 
-                console.log("Message Response:", messageResponse[0]);
+
+
 
                 res.status(200).json(messageResponse[0]);
 
@@ -338,9 +340,12 @@ app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
                 throw messageError;
             }
 
+
+            // take the messageResponse message not from this but from
+
             const messageResponse = message;
 
-            console.log("Message Response:", messageResponse[0]);
+            console.log('5, final message?????', messageResponse[0])
 
             res.status(200).json(messageResponse[0]);
         }
@@ -351,16 +356,14 @@ app.post("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
 });
 
 // FETCH PROJECTS
-app.get("/projects", /* authenticateUser, */ async (req, res) => {
+app.get("/projects", authenticateUser, async (req, res) => {
     try {
-        console.log("User ID:", req.user.id);
 
         const { data: projects, error } = await supabase
             .from("Projects")
             .select("*")
             .eq("user_id", req.user.id);
 
-        console.log("Projects:", projects);
 
         if (error) {
             throw error;
@@ -373,7 +376,7 @@ app.get("/projects", /* authenticateUser, */ async (req, res) => {
     }
 });
 
-app.get("/projects/:projectId", /* authenticateUser, */ async (req, res) => {
+app.get("/projects/:projectId", authenticateUser, async (req, res) => {
     const projectId = req.params.projectId;
 
     try {
@@ -394,16 +397,14 @@ app.get("/projects/:projectId", /* authenticateUser, */ async (req, res) => {
 });
 
 // FETCH CHATS
-app.get("/chat/conversations", /* authenticateUser, */ async (req, res) => {
+app.get("/chat/conversations", authenticateUser, async (req, res) => {
     try {
-        console.log("User ID:", req.user.id);
 
         const { data: conversations, error } = await supabase
             .from("Conversations")
             .select("conversation_id, summary")
             .eq("user_id", req.user.id);
 
-        console.log("Conversations:", conversations);
 
         if (error) {
             throw error;
@@ -416,14 +417,16 @@ app.get("/chat/conversations", /* authenticateUser, */ async (req, res) => {
     }
 });
 
-app.get("/chat/:conversationId", /* authenticateUser, */ async (req, res) => {
+app.get("/chat/:conversationId", authenticateUser, async (req, res) => {
     const conversationId = req.params.conversationId;
+
 
     try {
         const { data: messages, error } = await supabase
             .from("Messages")
             .select("*")
             .eq("conversation_id", conversationId);
+
 
         if (error) {
             throw error;
