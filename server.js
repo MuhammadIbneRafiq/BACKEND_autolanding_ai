@@ -341,7 +341,9 @@ app.get("/projects", authenticateUser, async (req, res) => {
         res.status(500).json({ error: "Failed to fetch projects" });
     }
 });
+  
 
+  
 app.get("/projects/:projectId", authenticateUser, async (req, res) => {
     const projectId = req.params.projectId;
 
