@@ -201,7 +201,7 @@ app.post("/auth/logout", authenticateUser, async (req, res) => {
 });
 
 // CHAT ROUTES
-app.post("/chat/new", authenticateUser, async (req, res) => {
+app.post("/new", authenticateUser, async (req, res) => {
   const { messageToSend, from } = req.body;
 
   if (!messageToSend || !from) {
@@ -355,7 +355,7 @@ app.get("/projects/:projectId", authenticateUser, async (req, res) => {
 });
 
 // FETCH CHATS
-app.get("/chat/conversations", authenticateUser, async (req, res) => {
+app.get("/conversations", authenticateUser, async (req, res) => {
   try {
     const { data: conversations, error } = await supabase
       .from("Conversations")
@@ -373,7 +373,7 @@ app.get("/chat/conversations", authenticateUser, async (req, res) => {
   }
 });
 
-app.get("/chat/:conversationId", authenticateUser, async (req, res) => {
+app.get("/:conversationId", authenticateUser, async (req, res) => {
   const conversationId = req.params.conversationId;
 
   try {
