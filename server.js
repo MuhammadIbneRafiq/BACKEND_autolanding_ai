@@ -15,12 +15,12 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatGroq } from "@langchain/groq"; // Importing ChatGroq
 import { createClient } from "@supabase/supabase-js";
 
+dotenv.config();
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
-
-dotenv.config();
 
 const connectionString = process.env.POSTGRES_CONNECTION_STRING;
 
