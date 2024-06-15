@@ -162,7 +162,6 @@ app.post("/chats/new", authenticateUser, async (req, res) => {
 
     // Create message and reply
     const message = await createMessage(chat, content, sender);
-
     console.log("New chat and message created successfully!");
     res.status(201).json(message);
   } catch (error) {
@@ -178,13 +177,11 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
   try {
     // Get chat
     const chat = await getChat(chatId);
-    let message;
-
-    if ( sender === SenderType.HUMAN) {
+    if ( sender === SenderType.USER ) {
       // Human message
-      message = await createMessage(chat, content, sender);
-      
-    } else if (sender === SenderType.ASSISTANT) {
+      const message = await createMessage(chat, content, sender);
+      res.status(201).json(message);
+    } else if ( sender === SenderType.ASSISTANT ) {
       // Assistant message
       const chatHistory = (await getChatHistory(chatId)).map((message) => message.content);
       const lastMessage = chatHistory.pop();
@@ -197,14 +194,13 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
         { configurable: { sessionId: chatId } }
       );
       
-      message = await createMessage(chat, content, sender);
+      const message = await createMessage(chat, content, sender);
+      res.status(201).json(message);
     } else {
       throw new Error("Invalid sender type");
     }
 
-    // Generate response with message
     console.log("New message created successfully!");
-    res.status(201).json(message);
   } catch (error) {
     console.error(error.stack);
     res.status(500).json({ error: "Failed to send message" });
