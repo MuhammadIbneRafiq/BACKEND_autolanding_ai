@@ -1,4 +1,5 @@
 import express, { json, response } from "express";
+import Stripe from "stripe";
 import cors from "cors";
 import dotenv from "dotenv";
 
@@ -6,6 +7,7 @@ import { getAllChats, getChat, createChat } from './lib/Chat.js'
 import { SenderType, getChatHistory, createMessage } from './lib/Message.js'
 import { chainWithHistory } from "./lib/utils.js";
 import { supabaseClient } from "./lib/supabase.js";
+import { StripePlans } from "./lib/stripe.js";
 
 dotenv.config();
 
@@ -128,7 +130,41 @@ app.post("/auth/logout", authenticateUser, async (req, res) => {
 // STRIPE
 app.post("/stripe", authenticateUser, async (req, res) => {
   const { plan } = req.body;
-  res.status(200).json({ plan });
+  const userId = req.user.id;
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+  let priceId;
+
+  if (plan === StripePlans.BASIC.name) {
+      priceId = StripePlans.BASIC.priceId;
+  } else if (plan === StripePlans.PRO.name) {
+      priceId = StripePlans.PRO.priceId;
+  } else if (plan === StripePlans.ENTERPRISE.name) {
+      priceId = StripePlans.ENTERPRISE.priceId;
+  } else {
+      return res.status(400).json({ error: "Invalid plan" });
+  }
+
+  try {
+      const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+              {
+                  price: priceId,
+                  quantity: 1,
+              },
+          ],
+          mode: 'subscription',
+          client_reference_id: userId,
+          success_url: "https://autolanding.ai/success?session_id={CHECKOUT_SESSION_ID}",
+          cancel_url: 'https://autolanding.ai/cancel',
+      });
+
+      res.status(200).json({ checkoutUrl: session.url });
+  } catch (error) {
+      console.error("Error creating Stripe checkout session:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+  }
 });  
 
 // CHAT
