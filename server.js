@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { getAllChats, getChat, createChat } from './lib/Chat.js'
 import { SenderType, getChatHistory, createMessage } from './lib/Message.js'
 import { chainWithHistory } from "./lib/utils.js";
-import { supabaseClient } from "./lib/params.js";
+import { supabaseClient } from "./lib/supabase.js";
 
 dotenv.config();
 
@@ -124,6 +124,12 @@ app.post("/auth/logout", authenticateUser, async (req, res) => {
     res.status(500).json({ error: error });
   }
 });
+
+// STRIPE
+app.post("/stripe", authenticateUser, async (req, res) => {
+  const { plan } = req.body;
+  res.status(200).json({ plan });
+});  
 
 // CHAT
 app.get("/chats", authenticateUser, async (req, res) => {
