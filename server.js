@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 
 import { getUserChats, getChat, createChat } from './lib/Chat.js'
 import { SenderType, getChatMessages, createMessage } from './lib/Message.js'
-import { chainWithHistory, convertMessagesToChatHistory } from "./lib/utils.js";
+import { chainWithHistory } from "./lib/utils.js";
 import { supabaseClient } from "./lib/params.js";
 import { StripePlans } from "./lib/stripe.js";
 
