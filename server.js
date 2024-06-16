@@ -1,12 +1,12 @@
-import express, { json, response } from "express";
+import express, { json } from "express";
 import Stripe from "stripe";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import { getAllChats, getChat, createChat } from './lib/Chat.js'
-import { SenderType, getChatHistory, createMessage } from './lib/Message.js'
-import { chainWithHistory } from "./lib/utils.js";
-import { supabaseClient } from "./lib/supabase.js";
+import { getUserChats, getChat, createChat } from './lib/Chat.js'
+import { SenderType, getChatMessages, createMessage } from './lib/Message.js'
+import { chainWithHistory, convertMessagesToChatHistory } from "./lib/utils.js";
+import { supabaseClient } from "./lib/params.js";
 import { StripePlans } from "./lib/stripe.js";
 
 dotenv.config();
@@ -171,7 +171,7 @@ app.post("/stripe", authenticateUser, async (req, res) => {
 // CHAT
 app.get("/chats", authenticateUser, async (req, res) => {
   try {
-    const chats = await getAllChats();
+    const chats = await getUserChats(req.user);
     res.status(200).json(chats);
   } catch (error) {
     console.error("Error fetching conversations:", error);
@@ -183,7 +183,7 @@ app.get("/chats/:chatId", authenticateUser, async (req, res) => {
   const chatId = req.params.chatId;
 
   try {
-    const chatHistory = await getChatHistory(chatId);
+    const chatHistory = await getChatMessages(chatId);
     res.status(200).json(chatHistory);
   } catch (error) {
     console.error("Error fetching messages:", error);
@@ -203,7 +203,7 @@ app.post("/chats/new", authenticateUser, async (req, res) => {
     // NOTE: Set 1st message as title
     const chat = await createChat(req.user, content);
 
-    // Create message and reply
+    // Create message
     const message = await createMessage(chat, content, sender);
     console.log("New chat and message created successfully!");
     res.status(201).json(message);
@@ -226,9 +226,11 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
       res.status(201).json(message);
     } else if ( sender === SenderType.ASSISTANT ) {
       // Assistant message
-      const chatHistory = (await getChatHistory(chatId)).map((message) => message.content);
+      const chatHistory = ((await getChatMessages(chatId)).map((message) => message.content));
       const lastMessage = chatHistory.pop();
 
+      console.log("Chat history:", chatHistory);
+      console.log("Last message:", lastMessage);
       const content = await chainWithHistory.invoke(
         { 
           input: lastMessage, 
