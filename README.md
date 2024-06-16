@@ -28,7 +28,7 @@ cp .env.sample .env
 
 # Start the backend development server
 nodemon ./server.js
-or
 
+# or
 node serer.js
 ```
