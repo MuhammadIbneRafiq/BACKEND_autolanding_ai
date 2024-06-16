@@ -128,6 +128,7 @@ app.post("/auth/logout", authenticateUser, async (req, res) => {
 });
 
 // STRIPE
+// TODO: Add success and cancel urls
 app.post("/stripe", authenticateUser, async (req, res) => {
   const { plan } = req.body;
   const userId = req.user.id;
@@ -156,8 +157,8 @@ app.post("/stripe", authenticateUser, async (req, res) => {
           ],
           mode: 'subscription',
           client_reference_id: userId,
-          success_url: "https://autolanding.ai/success?session_id={CHECKOUT_SESSION_ID}",
-          cancel_url: 'https://autolanding.ai/cancel',
+          success_url: process.env.APP_URL,
+          cancel_url: process.env.APP_URL,
       });
 
       res.status(200).json({ checkoutUrl: session.url });
