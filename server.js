@@ -5,7 +5,8 @@ import dotenv from "dotenv";
 
 import { getUserChats, getChat, createChat } from './lib/Chat.js'
 import { SenderType, getChatMessages, createMessage } from './lib/Message.js'
-import { chainWithHistory } from "./lib/utils.js";
+import { getUserProjects, getProject, createProject } from './lib/Project.js'
+import { chainWithHistory, createProjectChain, projectParser } from "./lib/Agent.js";
 import { supabaseClient } from "./lib/params.js";
 import { StripePlans } from "./lib/stripe.js";
 
@@ -42,7 +43,7 @@ const authenticateUser = async (req, res, next) => {
 };
 
 app.get("/", (req, res) => {
-  res.send("Autolance.ai is running successfully... 🚀");
+  res.send("Autolanding AI is running successfully... 🚀");
 });
 
 // AUTH
@@ -60,7 +61,7 @@ app.post("/auth/signup", async (req, res) => {
     });
 
     if (error) {
-      throw error.message;
+      throw error;
     }
 
     res.send("User signed up successfully!");
@@ -255,14 +256,7 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
 // PROJECTS
 app.get("/projects", authenticateUser, async (req, res) => {
   try {
-    const { data: projects, error } = await supabaseClient
-      .from("Projects")
-      .select("*")
-      .eq("user_id", req.user.id);
-
-    if (error) {
-      throw error;
-    }
+    const projects = await getUserProjects(req.user);    
 
     res.json(projects);
   } catch (error) {
@@ -275,19 +269,33 @@ app.get("/projects/:projectId", authenticateUser, async (req, res) => {
   const projectId = req.params.projectId;
 
   try {
-    const { data: project, error } = await supabaseClient
-      .from("Projects")
-      .select("*")
-      .eq("project_id", projectId);
+    const project = await getProject(projectId);
 
-    if (error) {
-      throw error;
-    }
-
-    res.json(project[0]);
+    res.json(project);
   } catch (error) {
     console.error("Error fetching project:", error);
     res.status(500).json({ error: "Failed to fetch project" });
+  }
+});
+
+app.post("/projects/new", authenticateUser, async (req, res) => {
+  const chatId = req.body.chatId;
+
+  try {
+    const chatHistory = ((await getChatMessages(chatId)).map((message) => message.content));
+    const output = await createProjectChain.invoke(
+      { 
+        history: chatHistory, 
+        format_instructions: projectParser.getFormatInstructions()
+      }
+    );
+
+    const project = await createProject(req.user, chatId, output.title, output.description);
+
+    res.status(201).json(project);
+  } catch (error) {
+    console.error("Error in creating new project:", error);
+    res.status(500).json({ error: "Failed to create new project" });
   }
 });
 
