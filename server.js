@@ -7,7 +7,7 @@ import { Chats } from './db/Chats.js'
 import { SenderType, Messages } from './db/Messages.js'
 import { Projects } from './db/Projects.js'
 import { Agent } from "./lib/Agent.js";
-import { supabaseClient } from "./lib/params.js";
+import { supabaseClient } from "./db/params.js";
 import { StripePlans } from "./lib/stripe.js";
 
 dotenv.config();

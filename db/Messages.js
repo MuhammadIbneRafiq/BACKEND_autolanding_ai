@@ -1,4 +1,4 @@
-import { supabaseClient } from "../lib/params.js";
+import { supabaseClient } from "../db/params.js";
   
 const SenderType = {
     USER: 'user',
