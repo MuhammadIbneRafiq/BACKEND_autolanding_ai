@@ -26,9 +26,9 @@ class Messages {
         return data
     }
     
-    async newMessage(content, sender) {
+    async newMessage(content, sender, isFinal = false) {
         const { data, error } = await this.client
-        .insert([{ content: content, sender: sender, chat_id: this.chatId, user_id: this.user.id}])
+        .insert([{ content: content, sender: sender, chat_id: this.chatId, user_id: this.user.id, is_final: isFinal }])
         .select();
     
         if (error) {
