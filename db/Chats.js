@@ -1,4 +1,4 @@
-import { supabaseClient } from "../lib/params.js";
+import { supabaseClient } from "./params.js";
   
 
 class Chats{
