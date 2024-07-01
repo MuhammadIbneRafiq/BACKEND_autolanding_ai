@@ -3,10 +3,10 @@ import Stripe from "stripe";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import { getUserChats, getChat, createChat } from './lib/Chat.js'
-import { SenderType, getChatMessages, createMessage } from './lib/Message.js'
-import { getUserProjects, getProject, createProject } from './lib/Project.js'
-import { chainWithHistory, createProjectChain, projectParser } from "./lib/Agent.js";
+import { Chats } from './db/Chats.js'
+import { SenderType, Messages } from './db/Messages.js'
+import { Projects } from './db/Projects.js'
+import { Agent } from "./lib/Agent.js";
 import { supabaseClient } from "./lib/params.js";
 import { StripePlans } from "./lib/stripe.js";
 
@@ -46,7 +46,7 @@ app.get("/", (req, res) => {
   res.send("Autolanding AI is running successfully... 🚀");
 });
 
-// AUTH
+// Auth
 app.post("/auth/signup", async (req, res) => {
   const { email, password } = req.body;
 
@@ -128,7 +128,7 @@ app.post("/auth/logout", authenticateUser, async (req, res) => {
   }
 });
 
-// STRIPE
+// Stripe
 // TODO: Add success and cancel urls
 app.post("/stripe", authenticateUser, async (req, res) => {
   const { plan } = req.body;
@@ -169,14 +169,16 @@ app.post("/stripe", authenticateUser, async (req, res) => {
   }
 });  
 
-// CHAT
+// Chats
 app.get("/chats", authenticateUser, async (req, res) => {
   try {
-    const chats = await getUserChats(req.user);
-    res.status(200).json(chats);
+    const chats = new Chats(req.user);
+    const userChats = await chats.getChats();
+
+    res.status(200).json(userChats);
   } catch (error) {
-    console.error("Error fetching conversations:", error);
-    res.status(500).json({ error: "Failed to fetch conversations" });
+    console.error("Error fetching chats:", error);
+    res.status(500).json({ error: "Failed to fetch chats" });
   }
 });
 
@@ -184,7 +186,8 @@ app.get("/chats/:chatId", authenticateUser, async (req, res) => {
   const chatId = req.params.chatId;
 
   try {
-    const chatHistory = await getChatMessages(chatId);
+    const messages = new Messages(req.user, chatId);
+    const chatHistory = await messages.getMessages();
     res.status(200).json(chatHistory);
   } catch (error) {
     console.error("Error fetching messages:", error);
@@ -201,11 +204,12 @@ app.post("/chats/new", authenticateUser, async (req, res) => {
 
   try {
     // Create a new chat
-    // NOTE: Set 1st message as title
-    const chat = await createChat(req.user, content);
+    const chats = new Chats(req.user);
+    const chat = await chats.newChat(content);
 
     // Create message
-    const message = await createMessage(chat, content, sender);
+    const messages = new Messages(req.user, chat.chat_id);
+    const message = await messages.newMessage(content, sender);
     console.log("New chat and message created successfully!");
     res.status(201).json(message);
   } catch (error) {
@@ -219,28 +223,22 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
   const { content, sender } = req.body;
 
   try {
-    // Get chat
-    const chat = await getChat(chatId);
     if ( sender === SenderType.USER ) {
       // Human message
-      const message = await createMessage(chat, content, sender);
+      const messages = new Messages(req.user, chatId);
+      const message = await messages.newMessage(content, sender);
+
       res.status(201).json(message);
     } else if ( sender === SenderType.ASSISTANT ) {
       // Assistant message
-      const chatHistory = ((await getChatMessages(chatId)).map((message) => message.content));
-      const lastMessage = chatHistory.pop();
+      const messages = new Messages(req.user, chatId);
+      const chatHistory = await messages.getMessages();
 
-      console.log("Chat history:", chatHistory);
-      console.log("Last message:", lastMessage);
-      const content = await chainWithHistory.invoke(
-        { 
-          input: lastMessage, 
-          history: chatHistory
-        },
-        { configurable: { sessionId: chatId } }
-      );
+      const agent = new Agent();
+      const output = await agent.replyToChat(chatHistory);
       
-      const message = await createMessage(chat, content, sender);
+      const message = await messages.newMessage(output, sender);
+
       res.status(201).json(message);
     } else {
       throw new Error("Invalid sender type");
@@ -248,17 +246,18 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
 
     console.log("New message created successfully!");
   } catch (error) {
-    console.error(error.stack);
+    console.error(error);
     res.status(500).json({ error: "Failed to send message" });
   }
 });
 
-// PROJECTS
+// Projects
 app.get("/projects", authenticateUser, async (req, res) => {
   try {
-    const projects = await getUserProjects(req.user);    
+    const projects = new Projects(req.user);
+    const userProjects = await projects.getProjects();    
 
-    res.json(projects);
+    res.json(userProjects);
   } catch (error) {
     console.error("Error fetching projects:", error);
     res.status(500).json({ error: "Failed to fetch projects" });
@@ -269,7 +268,8 @@ app.get("/projects/:projectId", authenticateUser, async (req, res) => {
   const projectId = req.params.projectId;
 
   try {
-    const project = await getProject(projectId);
+    const projects = new Projects(req.user);
+    const project = await projects.getProject(projectId);
 
     res.json(project);
   } catch (error) {
@@ -282,15 +282,14 @@ app.post("/projects/new", authenticateUser, async (req, res) => {
   const chatId = req.body.chatId;
 
   try {
-    const chatHistory = ((await getChatMessages(chatId)).map((message) => message.content));
-    const output = await createProjectChain.invoke(
-      { 
-        history: chatHistory, 
-        format_instructions: projectParser.getFormatInstructions()
-      }
-    );
+    const messages = new Messages(req.user, chatId);
+    const chatHistory = await messages.getMessages();
 
-    const project = await createProject(req.user, chatId, output.title, output.description);
+    const agent = new Agent();
+    const output = await agent.createProjectfromChat(chatHistory);
+
+    const projects = new Projects(req.user);
+    const project = await projects.newProject(chatId, output.title, output.description);
 
     res.status(201).json(project);
   } catch (error) {
