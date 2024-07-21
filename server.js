@@ -129,23 +129,10 @@ app.post("/auth/logout", authenticateUser, async (req, res) => {
 });
 
 // Stripe
-// TODO: Add success and cancel urls
 app.post("/stripe", authenticateUser, async (req, res) => {
-  const { plan } = req.body;
   const userId = req.user.id;
-
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-  let priceId;
-
-  if (plan === StripePlans.BASIC.name) {
-      priceId = StripePlans.BASIC.priceId;
-  } else if (plan === StripePlans.PRO.name) {
-      priceId = StripePlans.PRO.priceId;
-  } else if (plan === StripePlans.ENTERPRISE.name) {
-      priceId = StripePlans.ENTERPRISE.priceId;
-  } else {
-      return res.status(400).json({ error: "Invalid plan" });
-  }
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const priceId = process.env.STRIPE_PRICE_ID;
 
   try {
       const session = await stripe.checkout.sessions.create({
@@ -156,7 +143,7 @@ app.post("/stripe", authenticateUser, async (req, res) => {
                   quantity: 1,
               },
           ],
-          mode: 'subscription',
+          mode: 'payment',
           client_reference_id: userId,
           success_url: process.env.APP_URL,
           cancel_url: process.env.APP_URL,
