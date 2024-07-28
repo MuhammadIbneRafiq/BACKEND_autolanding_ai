@@ -48,14 +48,16 @@ app.get("/", (req, res) => {
 
 // Auth
 app.post("/auth/signup", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
 
-  if (!email || !password) {
+  // console.log(email, password, role)
+
+  if (!email || !password || !role) {
     return res.status(400).json({ error: "Invalid request" });
   }
 
   try {
-    const { error } = await supabaseClient.auth.signUp({
+    const { data, error } = await supabaseClient.auth.signUp({
       email: email,
       password: password,
     });
