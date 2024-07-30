@@ -48,11 +48,11 @@ app.get("/", (req, res) => {
 
 // Auth
 app.post("/auth/signup", async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password } = req.body;
 
   // console.log(email, password, role)
 
-  if (!email || !password || !role) {
+  if (!email || !password ) {
     return res.status(400).json({ error: "Invalid request" });
   }
 
@@ -225,7 +225,6 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
 
       const agent = new Agent();
       const output = await agent.replyToChat(chatHistory);
-      
       const message = await messages.newMessage(output.content, sender, output.is_final);
 
       res.status(201).json(message);

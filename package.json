@@ -11,9 +11,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@huggingface/inference": "^2.8.0",
     "@langchain/cohere": "^0.1.0",
     "@langchain/community": "^0.2.2",
     "@langchain/groq": "^0.0.12",
+    "@langchain/langgraph": "^0.0.31",
+    "@pinecone-database/pinecone": "^3.0.0",
     "@sk1ppi/package-nitter-scraper": "^1.0.0",
     "@supabase/supabase-js": "^2.43.2",
     "axios": "^1.7.2",
@@ -30,6 +33,7 @@
     "request-promise": "^4.2.6",
     "stripe": "^15.11.0",
     "supabase": "^1.167.4",
+    "terminal-kit": "^3.1.1",
     "twilio-client": "^1.15.1",
     "ws": "^8.17.0"
   }

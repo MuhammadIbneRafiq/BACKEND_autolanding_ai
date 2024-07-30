@@ -1,105 +1,150 @@
-import dotenv from 'dotenv';
-import pg from 'pg';
-import { PostgresChatMessageHistory } from "@langchain/community/stores/message/postgres";
-import { ChatOpenAI } from "@langchain/openai";
-import { RunnableWithMessageHistory } from "@langchain/core/runnables";
-import {
-  ChatPromptTemplate,
-  MessagesPlaceholder,
-} from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { ChatGroq } from "@langchain/groq"; // Importing ChatGroq
-import { createClient } from "@supabase/supabase-js";
+// Imports
+import dotenv from "dotenv";
+import readline from "readline";
+import { ChatGroq } from "@langchain/groq";
+import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { HumanMessage } from "@langchain/core/messages";
+import term from "terminal-kit";
 
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_KEY
-  );
-
+// Initialize dotenv to load environment variables
 dotenv.config();
 
-const connectionString = process.env.POSTGRES_CONNECTION_STRING;
+// Initialize Terminal Kit for better output formatting and visualization
+const tk = term.terminal;
 
-const pool = new pg.Pool({ connectionString });
-
-const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama3-8b-8192", // Using the 8-billion parameter model
-  });
-const prompt = ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      `
-      You are the Reply writer Agent for the freelancing platform which replies to clients looking for freelancers. Take the INITIAL_MESSAGE below 
-      from a human that has come to the platform looking for freelancers. The summarizer 
-      that the categorizer agent gave it and the research from the research agent and 
-      Ask helpful questions to better understand the freelancing needs in a thoughtful and friendly way. Remember people may be asking 
-      about a lot of things at once, make sure that by the end of the conversation you have these questions asked.
-  
-      If the customer message is 'off_topic' then ask them questions to get more information about freelancing orders.
-      If the customer message is 'description of a certain task' then try to get some designs or descriptions in the form of docs, or URLs or any other links depending on the task.
-      If the customer message is 'product_enquiry' then try to give them the info the researcher provided in a succinct and friendly way.
-      If any part of the user’s description is vague or incomplete, request additional details.
-      Facilitate a clear and precise exchange of information and confirm facts and summarize details to ensure accuracy.
-      If the customer message is 'price_enquiry' then try to ask for their budget and tell them about what they can possibly get in this budget.
-  
-      You never make up information that hasn't been provided by the research_info or in the initial_message.
-  
-      Return the reply as either 1 question or one sentence no more than around 20ish words. Make sure to not ask everything mentioned in the prompt 
-      at once, but check in memory if the above question is answered but don't ask questions back to back.
-      Keep it naturally in a conversational tone as well as friendly.
-  
-      If they ask for further communications, ask them to contact WhatsApp +316 45421019 for details, or LinkedIn: Muhammad Rafiq.
-      `,
-    ],
-    new MessagesPlaceholder("chat_history"),
-    ["human", "{input}"],
-  ]);
-
-const chain = prompt.pipe(model).pipe(new StringOutputParser());
-
-const chainWithHistory = new RunnableWithMessageHistory({
-  runnable: chain,
-  inputMessagesKey: "input",
-  historyMessagesKey: "chat_history",
-  getMessageHistory: async (sessionId) => {
-    const chatHistory = new PostgresChatMessageHistory({
-    tableName: 'Messages1',
-
-    sessionId,
-    pool,
-    });
-    return chatHistory;
-  },
-  storeMessage: async (message, sessionId) => {
-    const chatHistory = new PostgresChatMessageHistory({
-        tableName: 'Messages1',
-
-        sessionId,
-        pool,
-    });
-    await chatHistory.addMessage(message);
-  },
+// Initialize OpenAI LLM
+const llm = new ChatGroq({
+  apiKey: process.env.GROQ_API_KEY,
+  model: "llama3-70b-8192",
 });
 
-async function chat_input_main(sessionId, input_from_user) {
-    try {
-        // console.log('Session ID:', sessionId);
+// Initialize Tavily
+const tavily = new TavilySearchResults({
+  maxResults: 3,
+});
 
-        // Assuming chainWithHistory is properly defined elsewhere
-        const res2 = await chainWithHistory.invoke(
-            { input: input_from_user },
-            { configurable: { sessionId } }
-        );
+// Create a LangGraph agent
+const langgraphAgent = createReactAgent({
+  llm: llm,
+  tools: [tavily],
+});
 
-        // console.log('Response:', res2);
+// Define an asynchronous function to get the user question
+function getUserQuestion(message) {
+  // Creating a readline interface for reading lines from the standard input (keyboard)
+  const rl = readline.createInterface({
+    input: process.stdin, // Setting the input stream to the standard input (keyboard)
+    output: process.stdout, // Setting the output stream to the standard output (console)
+  });
 
-    } catch (error) {
-        console.error("Error:", error);
-    }
+  // Returning a Promise that resolves when the user enters something
+  return new Promise((resolve) => {
+    // Asking the user for input with the provided message
+    rl.question(message, (userQuestion) => {
+      // Closing the readline interface after receiving input
+      rl.close();
+      // Resolving the Promise with the user question
+      resolve(userQuestion);
+    });
+  });
 }
 
-const sessionId = "session_id_123"; // You can replace this with the actual session ID
-export { chat_input_main };
+// Define a function to process chunks from the agent
+function processChunks(chunk) {
+  /**
+   * Processes a chunk from the agent and displays information about tool calls or the agent's answer.
+   *
+   * @param {Object} chunk - The chunk to be processed.
+   * @return {void}
+   */
 
-chat_input_main(sessionId, 'I NEED FREELANCERS');
+  // Check if the chunk contains an agent's message
+  if ("agent" in chunk) {
+    // Iterate over the messages in the chunk
+    for (const message of chunk.agent.messages) {
+      // Check if the message contains tool calls
+      if (
+        "tool_calls" in message.additional_kwargs != undefined &&
+        Array.isArray(message.additional_kwargs.tool_calls)
+      ) {
+        // If the message contains tool calls, extract and display an informative message with tool call details
+
+        // Extract all the tool calls
+        const toolCalls = message.additional_kwargs.tool_calls;
+
+        // Iterate over the tool calls
+        toolCalls.forEach((toolCall) => {
+          // Extract the tool name
+          const toolName = toolCall.function.name;
+
+          // Extract the tool input
+          const toolArguments = JSON.parse(
+            toolCall.function.arguments.replace(/'/g, '"')
+          );
+          const toolInput = toolArguments.input;
+
+          // Display an informative message with tool call details
+          tk
+            .colorRgbHex("#00afff")(`\nThe agent is calling the tool `)
+            .bgColorRgbHex("#00afff")
+            .color("black")(`${toolName}`)
+            .bgColor("black")
+            .colorRgbHex("#00afff")(` with the query `)
+            .bgColorRgbHex("#00afff")
+            .color("black")(`${toolInput}`)
+            .bgColor("black")
+            .colorRgbHex("#00afff")(
+            `. Please wait for the agent's answer...\n`
+          );
+        });
+      } else {
+        // If the message doesn't contain tool calls, extract and display the agent's answer
+
+        // Extract the agent's answer
+        const agentAnswer = message.content;
+
+        // Display the agent's answer
+        tk.bgColor("white")
+          .color("black")(`\nAgent:\n${agentAnswer}\n`)
+          .color("white")
+          .bgColor("black");
+      }
+    }
+  }
+}
+
+// Define the main function
+async function main() {
+  /**
+   * Runs the main loop of the chat application.
+   *
+   * @return {Promise<void>} A promise that resolves when the user chooses to quit the chat.
+   */
+
+  // Loop until the user chooses to quit the chat
+  while (true) {
+    // Get the user's question and display it in the terminal
+    const userQuestion = await getUserQuestion("\nUser:\n");
+
+    // Check if the user wants to quit the chat
+    if (userQuestion.toLowerCase() === "quit") {
+      tk.bgColor("white").color("black")("\nAgent:\nHave a nice day!\n");
+      tk.bgColor("black").color("white")("\n");
+      break;
+    }
+
+    // Use the stream method of the LangGraph agent to get the agent's answer
+    const agentAnswer = await langgraphAgent.stream({
+      messages: [new HumanMessage({ content: userQuestion })],
+    });
+
+    // Process the chunks from the agent
+    for await (const chunk of agentAnswer) {
+      processChunks(chunk);
+    }
+  }
+}
+
+// Call the main function
+// main();
