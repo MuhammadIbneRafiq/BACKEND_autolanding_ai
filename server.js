@@ -9,6 +9,7 @@ import { Projects } from './db/Projects.js'
 import { Agent } from "./lib/Agent.js";
 import { supabaseClient } from "./db/params.js";
 import { StripePlans } from "./lib/stripe.js";
+import { sendEmail } from "./notif.js";
 
 dotenv.config();
 
@@ -279,9 +280,11 @@ app.post("/projects/new", authenticateUser, async (req, res) => {
     const projects = new Projects(req.user);
     const project = await projects.newProject(chatId, output.title, output.description);
 
+    await sendEmail()
+
     res.status(201).json(project);
   } catch (error) {
-    console.error("Error in creating new project:", error);
+    console.error("Error in creating new project or maybe its the EMAIL API", error);
     res.status(500).json({ error: "Failed to create new project" });
   }
 });
