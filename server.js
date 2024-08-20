@@ -50,9 +50,9 @@ app.get("/", (req, res) => {
 //User Role
 app.post("/user/role",authenticateUser,async(req,res)=>{
   const roles=new Role();
-  console.log(req.user.email);
+  // console.log(req.user.email);
   const response=await roles.getRole(req.user.email);
-  console.log(response);
+  // console.log(response);
   res.send(response?.role);
 });
 
