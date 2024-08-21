@@ -10,6 +10,8 @@ import { Agent } from "./lib/Agent.js";
 import { supabaseClient } from "./db/params.js";
 import { StripePlans } from "./lib/stripe.js";
 import { sendEmail } from "./notif.js";
+import { Role } from './db/Role.js';
+import { ConsoleMessage } from "puppeteer-core";
 
 dotenv.config();
 
@@ -45,10 +47,26 @@ const authenticateUser = async (req, res, next) => {
 app.get("/", (req, res) => {
   res.send("Autolanding AI is running successfully... 🚀");
 });
+//User Role
+app.post("/user/role",authenticateUser,async(req,res)=>{
+  const roles=new Role();
+  // console.log(req.user.email);
+  const response=await roles.getRole(req.user.email);
+  // console.log(response);
+  res.send(response?.role);
+});
+
+app.post("/user/setrole/:role",authenticateUser,async(req,res)=>{
+  const role = req.params.role;
+  // console.log(role);
+  const roles = new Role();
+  await roles.newRole(req.user.email, role);
+  res.send("User Role successfully!");
+});
 
 // Auth
 app.post("/auth/signup", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password ,role } = req.body;
 
   // console.log(email, password, role)
 
@@ -66,6 +84,9 @@ app.post("/auth/signup", async (req, res) => {
       throw error;
     }
 
+    const roles = new Role();
+    await roles.newRole(email, role);
+
     if (data.session) {
       res.status(200).json({
         message: "User signed up successfully!",
@@ -79,27 +100,14 @@ app.post("/auth/signup", async (req, res) => {
 });
 
 app.post("/auth/login", async (req, res) => {
-  const { email, password, provider } = req.body;
+  const { email, password} = req.body;
 
   // check if email and password are provided unless provider is provided
-  if ((!email || !password) && !provider) {
+  if (!email || !password) {
     return res.status(400).json({ error: "Invalid request" });
   }
 
   try {
-    if (provider) {
-      let { data, error } = await supabaseClient.auth.signInWithOAuth({
-        provider: provider,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      res.send({ accessToken: data.session.access_token });
-      return;
-    }
-
     const { data, error } = await supabaseClient.auth.signInWithPassword({
       email: email,
       password: password,
@@ -204,10 +212,10 @@ app.post("/chats/new", authenticateUser, async (req, res) => {
     // Create message
     const messages = new Messages(req.user, chat.chat_id);
     const message = await messages.newMessage(content, sender);
-    console.log("New chat and message created successfully!");
+    // console.log("New chat and message created successfully!");
     res.status(201).json(message);
   } catch (error) {
-    console.error("Error in creating new chat:", error);
+    // console.error("Error in creating new chat:", error);
     res.status(500).json({ error: "Failed to create new chat" });
   }
 });
@@ -241,7 +249,7 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
       throw new Error("Invalid sender type");
     }
 
-    console.log("New message created successfully!");
+    // console.log("New message created successfully!");
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to send message" });
