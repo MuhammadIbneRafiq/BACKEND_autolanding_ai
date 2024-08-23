@@ -90,10 +90,10 @@ async function scraper1() {
         await browser.close();
         fs.writeFileSync('ui_ux_designer_expanded.html', html, 'utf-8');
 
-        console.log('Scraping completed after 1 minute.');
+        // console.log('Scraping completed after 1 minute.');
         return html;
     } catch (error) {
-        console.log('Error occurred:', error);
+        // console.log('Error occurred:', error);
         if (browser) await browser.close();
         return null;
     }

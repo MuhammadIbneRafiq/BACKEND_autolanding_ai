@@ -22,5 +22,5 @@ export const sendEmail = async () => {
         ['66ba6e0a0027bc14d367', '66ba6ccf000431b2aa31'], //user of email receiver from appwrite, both of us.
 
     )
-    console.log('mesg', message)
+    // console.log('mesg', message)
 }
