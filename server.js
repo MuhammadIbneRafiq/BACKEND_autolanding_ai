@@ -260,12 +260,14 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
   }
 });
 
-//Search
-app.post("/search", async (req, res) => {
+//Search/
+app.post("/search", authenticateUser, async (req, res) => {
   const { query } = req.body;
 
+  const user = req.user;
+
   try {
-    const results = await SearchTwitter(query);
+    const results = await SearchTwitter(user);
 
     // Send the search results back to the client
     res.status(200).json(results);
