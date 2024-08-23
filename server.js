@@ -3,16 +3,16 @@ import Stripe from "stripe";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import { Chats } from './db/Chats.js'
-import { SenderType, Messages } from './db/Messages.js'
-import { Projects } from './db/Projects.js'
+import { Chats } from "./db/Chats.js";
+import { SenderType, Messages } from "./db/Messages.js";
+import { Projects } from "./db/Projects.js";
 import { Agent } from "./lib/Agent.js";
 import { supabaseClient } from "./db/params.js";
 import { StripePlans } from "./lib/stripe.js";
 import { sendEmail } from "./notif.js";
+import { SearchTwitter } from "./lib/search.js";
 
 dotenv.config();
-
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -53,7 +53,7 @@ app.post("/auth/signup", async (req, res) => {
 
   // console.log(email, password, role)
 
-  if (!email || !password ) {
+  if (!email || !password) {
     return res.status(400).json({ error: "Invalid request" });
   }
 
@@ -138,26 +138,26 @@ app.post("/stripe", authenticateUser, async (req, res) => {
   const priceId = process.env.STRIPE_PRICE_ID;
 
   try {
-      const session = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
-          line_items: [
-              {
-                  price: priceId,
-                  quantity: 1,
-              },
-          ],
-          mode: 'payment',
-          client_reference_id: userId,
-          success_url: process.env.APP_URL,
-          cancel_url: process.env.APP_URL,
-      });
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      client_reference_id: userId,
+      success_url: process.env.APP_URL,
+      cancel_url: process.env.APP_URL,
+    });
 
-      res.status(200).json({ checkoutUrl: session.url });
+    res.status(200).json({ checkoutUrl: session.url });
   } catch (error) {
-      console.error("Error creating Stripe checkout session:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error creating Stripe checkout session:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-});  
+});
 
 // Chats
 app.get("/chats", authenticateUser, async (req, res) => {
@@ -213,20 +213,24 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
   const { content, sender } = req.body;
 
   try {
-    if ( sender === SenderType.USER ) {
+    if (sender === SenderType.USER) {
       // Human message
       const messages = new Messages(req.user, chatId);
       const message = await messages.newMessage(content, sender);
 
       res.status(201).json(message);
-    } else if ( sender === SenderType.ASSISTANT ) {
+    } else if (sender === SenderType.ASSISTANT) {
       // Assistant message
       const messages = new Messages(req.user, chatId);
       const chatHistory = await messages.getMessages();
 
       const agent = new Agent();
       const output = await agent.replyToChat(chatHistory);
-      const message = await messages.newMessage(output.content, sender, output.is_final);
+      const message = await messages.newMessage(
+        output.content,
+        sender,
+        output.is_final
+      );
 
       res.status(201).json(message);
     } else {
@@ -240,11 +244,28 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
   }
 });
 
+//Search
+app.post("/search", async (req, res) => {
+  const { query } = req.body;
+
+  try {
+    const results = await SearchTwitter(query);
+
+    // Send the search results back to the client
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("Error in searching projects:", error);
+
+    // Send an error response to the client
+    res.status(500).json({ error: "Failed to search projects" });
+  }
+});
+
 // Projects
 app.get("/projects", authenticateUser, async (req, res) => {
   try {
     const projects = new Projects(req.user);
-    const userProjects = await projects.getProjects();    
+    const userProjects = await projects.getProjects();
 
     res.json(userProjects);
   } catch (error) {
@@ -278,13 +299,20 @@ app.post("/projects/new", authenticateUser, async (req, res) => {
     const output = await agent.createProjectfromChat(chatHistory);
 
     const projects = new Projects(req.user);
-    const project = await projects.newProject(chatId, output.title, output.description);
+    const project = await projects.newProject(
+      chatId,
+      output.title,
+      output.description
+    );
 
-    await sendEmail()
+    await sendEmail();
 
     res.status(201).json(project);
   } catch (error) {
-    console.error("Error in creating new project or maybe its the EMAIL API", error);
+    console.error(
+      "Error in creating new project or maybe its the EMAIL API",
+      error
+    );
     res.status(500).json({ error: "Failed to create new project" });
   }
 });
