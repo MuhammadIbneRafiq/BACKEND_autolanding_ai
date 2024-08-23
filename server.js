@@ -244,7 +244,8 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
 
         sender,
 
-        output.is_final
+        output.is_final,
+        output.search_needed
       );
 
       res.status(201).json(message);
