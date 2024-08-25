@@ -5,8 +5,8 @@ class Role{
         this.client = supabaseClient.from("buyer_seller_table");
     }
 
-    async newRole(email,role) {
-        const { data: roleResponse, error: roleError } = await this.client
+    async newRole(email, role) {
+        const { error: roleError } = await this.client
         .insert([{ role: role, email: email }])
         .select();
     
