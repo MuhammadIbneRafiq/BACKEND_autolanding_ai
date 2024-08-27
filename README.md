@@ -11,7 +11,7 @@ Our multi-agent platform allows clients to hire freelancers by chatting with an 
 
 -   **Frontend:** TypeScript & Tailwind CSS with Shadcn UI library.
 -   **Backend:** JavaScript and Supabase.
--   **Database:** Postgres.
+-   **Database:** Postgres in Supabase
 
 ## Project Setup
 

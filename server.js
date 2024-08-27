@@ -260,14 +260,16 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
 
 //Search/
 app.post("/search", authenticateUser, async (req, res) => {
-  const { query } = req.body;
+  // const { query } = req.body;
 
   const user = req.user;
 
   try {
-    const results = await SearchTwitter(user);
+    const results = await SearchTwitter(user.email);
 
     // Send the search results back to the client
+    // console.log('results', results)
+    // console.log('usr', user).
     res.status(200).json(results);
   } catch (error) {
     console.error("Error in searching projects:", error);
