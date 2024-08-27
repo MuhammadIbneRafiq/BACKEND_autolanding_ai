@@ -241,9 +241,7 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
       const output = await agent.replyToChat(chatHistory);
       const message = await messages.newMessage(
         output.content,
-
         sender,
-
         output.is_final,
         output.search_needed
       );
