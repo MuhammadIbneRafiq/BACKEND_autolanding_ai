@@ -206,6 +206,7 @@ async function main() {
     const agentResponse = await agent.replyToChat(chatHistory);
     chatHistory.push({ sender: "agent", content: agentResponse });
     console.log("Agent response:", agentResponse);
+    console.log('chathisotry::::', chatHistory)
   }
   
 }

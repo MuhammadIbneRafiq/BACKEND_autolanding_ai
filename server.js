@@ -246,6 +246,7 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
         output.search_needed
       );
 
+      console.log('ans', output.content, 'is_final', is_final)
       res.status(201).json(message);
     } else {
       throw new Error("Invalid sender type");
@@ -292,14 +293,20 @@ app.get("/projects", authenticateUser, async (req, res) => {
   }
 });
 
-app.get("/projects/:projectId", authenticateUser, async (req, res) => {
+app.get("/projects/:projectId", async (req, res) => {
   const projectId = req.params.projectId;
 
   try {
-    const projects = new Projects(req.user);
-    const project = await projects.getProject(projectId);
 
-    res.json(project);
+    // removed them cause making projects displayed publicly (this same will be used for profiles for freelancers)
+    // const projects = new Projects(req.user);
+    // console.log('this is the user', projects)
+    const { data, error } = await supabaseClient.from("projects")
+      .select("*")
+      .eq("project_id", projectId)
+      .single();
+
+    res.json(data);
   } catch (error) {
     console.error("Error fetching project:", error);
     res.status(500).json({ error: "Failed to fetch project" });
@@ -323,7 +330,7 @@ app.post("/projects/new", authenticateUser, async (req, res) => {
       output.description
     );
 
-    await sendEmail();
+    // await sendEmail();
 
     res.status(201).json(project);
   } catch (error) {
