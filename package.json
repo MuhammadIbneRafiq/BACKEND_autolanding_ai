@@ -5,16 +5,16 @@
   "main": "backend.js",
   "scripts": {
     "start": "node server.js",
-    "dev":"nodemon server.js"
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@huggingface/inference": "^2.8.0",
+    "@huggingface/inference": "^2.8.1",
     "@langchain/cohere": "^0.1.0",
-    "@langchain/community": "^0.2.2",
+    "@langchain/community": "^0.2.33",
     "@langchain/groq": "^0.0.12",
     "@langchain/langgraph": "^0.0.31",
     "@pinecone-database/pinecone": "^3.0.0",
@@ -25,9 +25,13 @@
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
+    "fs": "^0.0.1-security",
     "groq-sdk": "^0.3.3",
+    "langchain": "^0.3.6",
+    "multer": "^1.4.5-lts.1",
     "node-appwrite": "^13.0.0",
     "openai": "^4.47.1",
+    "pdf-parse": "^1.1.1",
     "pg": "^8.11.5",
     "postgres": "^3.4.4",
     "puppeteer": "^19.11.1",
