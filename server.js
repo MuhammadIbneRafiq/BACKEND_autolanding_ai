@@ -1,26 +1,24 @@
-const express = require("express");
-const { json } = require("express");
-const Stripe = require("stripe");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require('path');
-const { fileURLToPath } = require('url');
-const fs = require('fs');
-const multer = require('multer');
-const pdfParse = require('pdf-parse');
-const { Chats } = require("./db/Chats.js");
-const { SenderType, Messages } = require("./db/Messages.js");
-const { Projects } = require("./db/Projects.js");
-const { Agent } = require("./lib/Agent.js");
-const { supabaseClient } = require("./db/params.js");
-const { StripePlans } = require("./lib/stripe.js");
-const { sendEmail } = require("./notif.js");
-const { Role } = require("./db/Role.js");
-const { ConsoleMessage } = require("puppeteer-core");
-const { SearchTwitter } = require("./lib/search.js");
-const { generateEmbedding } = require('./lib/embeddings.js');
+import express, { json } from "express";
+import Stripe from "stripe";
+import cors from "cors";
+import dotenv from "dotenv";
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+import multer from 'multer';
+// import pdfParse from 'pdf-parse';
+import { generateEmbedding } from './lib/embeddings.js';
+import { Chats } from "./db/Chats.js";
+import { SenderType, Messages } from "./db/Messages.js";
+import { Projects } from "./db/Projects.js";
+import { Agent } from "./lib/Agent.js";
+import { supabaseClient } from "./db/params.js";
+import { StripePlans } from "./lib/stripe.js";
+import { sendEmail } from "./notif.js";
+import { Role } from "./db/Role.js";
+import { ConsoleMessage } from "puppeteer-core";
+import { SearchTwitter } from "./lib/search.js";
 
-// Add this before configuring multer
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -46,7 +44,6 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-dotenv.config();
 
 // Middleware
 app.use(cors());
@@ -76,18 +73,16 @@ const authenticateUser = async (req, res, next) => {
 app.get("/", (req, res) => {
   res.send("Autolanding AI is running successfully... 🚀");
 });
-//User Role
+
+// User Role
 app.post("/user/role", authenticateUser, async (req, res) => {
   const roles = new Role();
-  // console.log(req.user.email);
   const response = await roles.getRole(req.user.email);
-  // console.log(response);
   res.send(response?.role);
 });
 
 app.post("/user/setrole/:role", authenticateUser, async (req, res) => {
   const role = req.params.role;
-  // console.log(role);
   const roles = new Role();
   await roles.newRole(req.user.email, role);
   res.send("User Role successfully!");
@@ -96,8 +91,6 @@ app.post("/user/setrole/:role", authenticateUser, async (req, res) => {
 // Auth
 app.post("/auth/signup", async (req, res) => {
   const { email, password, role } = req.body;
-
-  // console.log(email, password, role)
 
   if (!email || !password) {
     return res.status(400).json({ error: "Invalid request" });
@@ -131,7 +124,6 @@ app.post("/auth/signup", async (req, res) => {
 app.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
-  // check if email and password are provided unless provider is provided
   if (!email || !password) {
     return res.status(400).json({ error: "Invalid request" });
   }
@@ -245,28 +237,19 @@ app.post("/chats/new", authenticateUser, async (req, res) => {
     console.log("New chat and message created successfully!");
     res.status(201).json(message);
   } catch (error) {
-    // console.error("Error in creating new chat:", error);
     res.status(500).json({ error: "Failed to create new chat" });
   }
 });
 
-//Search/
+// Search
 app.post("/search", authenticateUser, async (req, res) => {
-  // const { query } = req.body;
-
   const user = req.user;
 
   try {
     const results = await SearchTwitter(user.email);
-
-    // Send the search results back to the client
-    // console.log('results', results)
-    // console.log('usr', user).
     res.status(200).json(results);
   } catch (error) {
     console.error("Error in searching projects:", error);
-
-    // Send an error response to the client
     res.status(500).json({ error: "Failed to search projects" });
   }
 });
@@ -288,10 +271,6 @@ app.get("/projects/:projectId", async (req, res) => {
   const projectId = req.params.projectId;
 
   try {
-
-    // removed them cause making projects displayed publicly (this same will be used for profiles for freelancers)
-    // const projects = new Projects(req.user);
-    // console.log('this is the user', projects)
     const { data, error } = await supabaseClient.from("projects")
       .select("*")
       .eq("project_id", projectId)
@@ -321,15 +300,9 @@ app.post("/projects/new", authenticateUser, async (req, res) => {
       output.description
     );
 
-    // await sendEmail();
-
     res.status(201).json(project);
   } catch (error) {
-    console.error(
-      "Error in creating new project or maybe its the EMAIL API",
-
-      error
-    );
+    console.error("Error in creating new project or maybe its the EMAIL API", error);
     res.status(500).json({ error: "Failed to create new project" });
   }
 });
@@ -370,7 +343,7 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
         'match_documents',
         {
           chat_id: chatId,
-          match_threshold: 0.7, // Adjust similarity threshold as needed
+          match_threshold: 0.7,
           match_count: 3
         }
       );
@@ -414,60 +387,58 @@ app.put("/chats/:chatId", authenticateUser, async (req, res) => {
   }
 });
 
-app.post('/api/upload-pdf', authenticateUser, upload.single('pdf'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded.' });
-    }
+// app.post('/api/upload-pdf', authenticateUser, upload.single('pdf'), async (req, res) => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({ error: 'No file uploaded.' });
+//     }
 
-    const chatId = req.body.chatId; // Add this to receive chatId from frontend
-    const filePath = req.file.path;
+//     const chatId = req.body.chatId; // Add this to receive chatId from frontend
+//     const filePath = req.file.path;
     
-    try {
-      const dataBuffer = fs.readFileSync(filePath);
-      const data = await pdfParse(dataBuffer);
-      fs.unlinkSync(filePath);
+//     try {
+//       const dataBuffer = fs.readFileSync(filePath);
+//       const data = await pdfParse(dataBuffer);
+//       fs.unlinkSync(filePath);
 
-      const chunks = data.text.split('\n\n').filter(chunk => chunk.trim().length > 0);
+//       const chunks = data.text.split('\n\n').filter(chunk => chunk.trim().length > 0);
       
-      // Store chunks with chat_id reference
-      for (const chunk of chunks) {
-        const embedding = await generateEmbedding(chunk);
-        const { data: vectorData, error } = await supabaseClient
-          .from('documents')
-          .insert([
-            {
-              content: chunk,
-              chat_id: chatId, // Add this to link document to chat
-              metadata: {
-                source: req.file.originalname,
-                type: 'pdf'
-              },
-              embedding: embedding
-            }
-          ]);
+//       // Store chunks with chat_id reference
+//       for (const chunk of chunks) {
+//         const embedding = await generateEmbedding(chunk);
+//         const { data: vectorData, error } = await supabaseClient
+//           .from('documents')
+//           .insert([{
+//             content: chunk,
+//             chat_id: chatId,
+//             metadata: {
+//               source: req.file.originalname,
+//               type: 'pdf'
+//             },
+//             embedding: embedding
+//           }]);
 
-        if (error) throw error;
-      }
+//         if (error) throw error;
+//       }
 
-      res.json({ 
-        message: 'Resume processed and stored successfully',
-        chunks: chunks.length
-      });
-    } catch (error) {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-      throw error;
-    }
-  } catch (error) {
-    console.error('Error processing PDF:', error);
-    res.status(500).json({ 
-      error: 'Error processing PDF',
-      details: error.message 
-    });
-  }
-});
+//       res.json({ 
+//         message: 'Resume processed and stored successfully',
+//         chunks: chunks.length
+//       });
+//     } catch (error) {
+//       if (fs.existsSync(filePath)) {
+//         fs.unlinkSync(filePath);
+//       }
+//       throw error;
+//     }
+//   } catch (error) {
+//     console.error('Error processing PDF:', error);
+//     res.status(500).json({ 
+//       error: 'Error processing PDF',
+//       details: error.message 
+//     });
+//   }
+// });
 
 // Start the server
 app.listen(port, () => {
