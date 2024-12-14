@@ -1,4 +1,4 @@
-import { supabaseClient } from "../db/params.js";
+const { supabaseClient } = require("../db/params.js");
 
 const SenderType = {
   USER: "user",
@@ -48,4 +48,4 @@ class Messages {
   }
 }
 
-export { SenderType, Messages };
+module.exports = { SenderType, Messages };

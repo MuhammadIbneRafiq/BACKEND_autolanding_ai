@@ -1,4 +1,4 @@
-import { supabaseClient } from "./params.js";
+const { supabaseClient } = require("./params.js");
   
 
 class Chats{
@@ -47,4 +47,4 @@ class Chats{
     }
 }
 
-export { Chats };
+module.exports = { Chats };

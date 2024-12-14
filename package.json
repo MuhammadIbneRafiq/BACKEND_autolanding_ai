@@ -1,7 +1,6 @@
 {
   "name": "groq-node-sdk",
   "version": "1.0.0",
-  "type": "module",
   "main": "backend.js",
   "scripts": {
     "start": "node server.js",

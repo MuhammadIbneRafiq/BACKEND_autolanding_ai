@@ -1,10 +1,24 @@
-import express, { json } from "express";
-import Stripe from "stripe";
-import cors from "cors";
-import dotenv from "dotenv";
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+const express = require("express");
+const { json } = require("express");
+const Stripe = require("stripe");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require('path');
+const { fileURLToPath } = require('url');
+const fs = require('fs');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
+const { Chats } = require("./db/Chats.js");
+const { SenderType, Messages } = require("./db/Messages.js");
+const { Projects } = require("./db/Projects.js");
+const { Agent } = require("./lib/Agent.js");
+const { supabaseClient } = require("./db/params.js");
+const { StripePlans } = require("./lib/stripe.js");
+const { sendEmail } = require("./notif.js");
+const { Role } = require("./db/Role.js");
+const { ConsoleMessage } = require("puppeteer-core");
+const { SearchTwitter } = require("./lib/search.js");
+const { generateEmbedding } = require('./lib/embeddings.js');
 
 // Add this before configuring multer
 const __filename = fileURLToPath(import.meta.url);
@@ -27,22 +41,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
-
-import { Chats } from "./db/Chats.js";
-import { SenderType, Messages } from "./db/Messages.js";
-import { Projects } from "./db/Projects.js";
-import { Agent } from "./lib/Agent.js";
-import { supabaseClient } from "./db/params.js";
-import { StripePlans } from "./lib/stripe.js";
-import { sendEmail } from "./notif.js";
-import { Role } from "./db/Role.js";
-import { ConsoleMessage } from "puppeteer-core";
-import { SearchTwitter } from "./lib/search.js";
-
-import multer from 'multer';
-import pdfParse from 'pdf-parse/lib/pdf-parse'
-
-import { generateEmbedding } from './lib/embeddings.js';
 
 dotenv.config();
 
