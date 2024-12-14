@@ -1,0 +1,16 @@
+# serverless.yml
+service: your-service-name
+
+provider:
+  name: aws
+  runtime: nodejs14.x # or your preferred Node.js version
+
+custom:
+  bundle:
+    includeModules: true
+    externals:
+      - pdf-parse
+
+functions:
+  yourFunctionName:
+    handler: path/to/your/handler
