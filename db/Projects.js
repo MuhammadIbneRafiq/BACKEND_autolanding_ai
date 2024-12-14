@@ -1,5 +1,4 @@
-const { supabaseClient } = require("../db/params.js");
-  
+import { supabaseClient } from "../db/params.js";
 
 class Projects {
     constructor(user) {
@@ -47,4 +46,4 @@ class Projects {
     }
 }
 
-module.exports = { Projects };
+export { Projects };

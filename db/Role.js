@@ -1,6 +1,6 @@
-const { supabaseClient } = require("./params.js");
+import { supabaseClient } from "./params.js";
 
-class Role{
+class Role {
     constructor() {
         this.client = supabaseClient.from("buyer_seller_table");
     }
@@ -27,4 +27,4 @@ class Role{
     }
 }
 
-module.exports = { Role };
+export { Role };

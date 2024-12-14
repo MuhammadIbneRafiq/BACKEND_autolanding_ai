@@ -1,6 +1,6 @@
-const { createClient } = require("@supabase/supabase-js");
-const pg = require("pg");
-const dotenv = require("dotenv");
+import { createClient } from "@supabase/supabase-js";
+import pg from "pg";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -12,4 +12,4 @@ const supabaseClient = createClient(
 const connectionString = process.env.POSTGRES_CONNECTION_STRING;
 const pool = new pg.Pool({ connectionString });
 
-module.exports = { supabaseClient, pool };
+export { supabaseClient, pool };

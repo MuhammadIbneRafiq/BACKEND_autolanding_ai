@@ -1,7 +1,6 @@
-const { supabaseClient } = require("./params.js");
-  
+import { supabaseClient } from "./params.js";
 
-class Chats{
+class Chats {
     constructor(user) {
         this.client = supabaseClient.from("chats");
         this.user = user;
@@ -47,4 +46,4 @@ class Chats{
     }
 }
 
-module.exports = { Chats };
+export { Chats };
