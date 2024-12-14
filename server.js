@@ -40,7 +40,8 @@ import { ConsoleMessage } from "puppeteer-core";
 import { SearchTwitter } from "./lib/search.js";
 
 import multer from 'multer';
-import pdfParse from 'pdf-parse';
+import pdfParse from 'pdf-parse/lib/pdf-parse'
+
 import { generateEmbedding } from './lib/embeddings.js';
 
 dotenv.config();
